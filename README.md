@@ -5,7 +5,7 @@
 - <b>Data Structures and Algorithms Practice (AlgoExpert)</b>
   - [Active Directory Home Lab](https://github.com/joshmadakor1/Algorithms-Practice)
 
-<h2>📺 Certifications:</h2>
+<h2>📄 Certifications:</h2>
 
 - [Google Cybersecurity Certification](https://www.coursera.org/account/accomplishments/specialization/GBNGRK56ZNI1)
 
