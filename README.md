@@ -1,9 +1,10 @@
 <h1>Hi, I'm Derek! <br/><a href="https://github.com/ecuaa">Programmer</a> & <a href="https://www.linkedin.com/in/derek-espejo-646b77225/">Cybersecurity Professional</a>
+  <h2> <b>Hi, I’m Derek, an aspiring IT professional passionate about technology, problem-solving, and continuous learning. I enjoy working on hands on projects that help me strengthen my technical skills and explore how systems and software work behind the scenes.</b> </h2>
 
-<h2>👨‍💻 Cybersecurity Projects:</h2>
+  <h2>👨‍💻 Cybersecurity Projects:</h2>
 
-- <b>Data Structures and Algorithms Practice (AlgoExpert)</b>
-  - [Active Directory Home Lab (In Progress....)]
+- <b>Virtual Home Lab - Windows 11 on MacOS</b>
+  - [Virtual Home Lab](https://github.com/ecuaa/Virtual-Machine-Home-Lab/tree/main)
 
 <h2>📄 Certifications:</h2>
 
