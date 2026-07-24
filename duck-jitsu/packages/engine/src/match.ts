@@ -115,13 +115,15 @@ export function playTurn(
     }
   }
 
-  const bothOutOfCards =
-    next.a.hand.length === 0 &&
-    next.a.deck.length === 0 &&
-    next.b.hand.length === 0 &&
-    next.b.deck.length === 0;
+  // Decks aren't guaranteed to be the same size (e.g. a player's own small collection vs. a
+  // fuller AI deck), so one side can run out of cards to play well before the other. The match
+  // must end as soon as *either* side can no longer take a turn -- waiting for both would stall
+  // forever once the shorter-decked side has nothing left in hand or deck.
+  const eitherOutOfCards =
+    (next.a.hand.length === 0 && next.a.deck.length === 0) ||
+    (next.b.hand.length === 0 && next.b.deck.length === 0);
 
-  if (bothOutOfCards) {
+  if (eitherOutOfCards) {
     const tiebreak = resolveOutOfCardsTiebreak(next.a.collected, next.b.collected);
     next.status = 'finished';
     next.winner = tiebreak;

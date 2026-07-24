@@ -79,7 +79,7 @@ describe('casual PvP matchmaking + battle', () => {
     }
 
     expect(view1.status).toBe('finished');
-    expect(['a', 'b', 'draw']).toContain(view1.winner);
+    expect(['you', 'opponent', 'draw']).toContain(view1.winner);
   }, 15000);
 
   it('declares the remaining player the winner if the opponent disconnects mid-match', async () => {
@@ -99,6 +99,6 @@ describe('casual PvP matchmaking + battle', () => {
     const end1 = new Promise<any>((resolve) => s1.once('match:end', resolve));
     s2.close();
     const outcome = await end1;
-    expect(outcome.winner).toBe('a');
+    expect(outcome.winner).toBe('you');
   }, 15000);
 });

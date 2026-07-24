@@ -15,8 +15,15 @@ import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import { requireAuth } from '../auth';
 import type { Db } from '../db';
-import { arenaTierFor, buildAiDeck, buildPlayerDeck, finalizeMatch, serializeMatchView } from '../matchEngine';
-import { setTutorialCompleted } from '../repo/users';
+import {
+  arenaTierFor,
+  buildAiDeck,
+  buildPlayerDeck,
+  finalizeMatch,
+  personalizeOutcome,
+  relativeOutcome,
+  serializeMatchView,
+} from '../matchEngine';
 import { getUserById } from '../repo/users';
 
 interface PracticeSession {
@@ -116,7 +123,7 @@ export function practiceRouter(db: Db): Router {
     let outcome;
     if (turn.state.status === 'finished') {
       const user = getUserById(db, session.userId)!;
-      outcome = finalizeMatch(db, {
+      const rawOutcome = finalizeMatch(db, {
         mode: 'practice',
         matchState: turn.state,
         playerAId: session.userId,
@@ -125,13 +132,16 @@ export function practiceRouter(db: Db): Router {
         playerBName: session.isTutorial ? 'Sensei Bot' : 'Practice Bot',
         bIsBot: true,
       });
-      if (session.isTutorial) setTutorialCompleted(db, session.userId);
+      outcome = personalizeOutcome(rawOutcome, 'a'); // the human player is always side 'a' here
+      // Note: winning the scripted tutorial battle is only the middle of onboarding (starter
+      // pack + arena walkthrough steps still follow) -- tutorialCompleted is set later, by the
+      // client explicitly calling POST /me/tutorial-complete once the whole flow finishes.
       sessions.delete(req.params.matchId);
     }
 
     res.json({
       turnResult: {
-        outcome: turn.turnResult.outcome,
+        outcome: relativeOutcome(turn.turnResult.outcome, 'a'),
         reason: turn.turnResult.reason,
         yourCard: turn.turnResult.cardA,
         opponentCard: turn.turnResult.cardB,

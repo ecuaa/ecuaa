@@ -5,7 +5,13 @@ import { Server, type Socket } from 'socket.io';
 import { verifyToken } from '../auth';
 import { config } from '../config';
 import type { Db } from '../db';
-import { arenaTierFor, buildAiDeck, buildPlayerDeck, finalizeMatch, serializeMatchView } from '../matchEngine';
+import {
+  buildPlayerDeck,
+  finalizeMatch,
+  personalizeOutcome,
+  relativeOutcome,
+  serializeMatchView,
+} from '../matchEngine';
 import { getUserById } from '../repo/users';
 import { createMatch, playTurn, type MatchState } from '@duck-jitsu/engine';
 
@@ -120,7 +126,7 @@ export function attachRealtime(httpServer: HttpServer, db: Db): Server {
 
     io.to(match.a.socketId).emit('match:turn-result', {
       turnResult: {
-        outcome: turn.turnResult.outcome,
+        outcome: relativeOutcome(turn.turnResult.outcome, 'a'),
         reason: turn.turnResult.reason,
         yourCard: turn.turnResult.cardA,
         opponentCard: turn.turnResult.cardB,
@@ -129,7 +135,7 @@ export function attachRealtime(httpServer: HttpServer, db: Db): Server {
     });
     io.to(match.b.socketId).emit('match:turn-result', {
       turnResult: {
-        outcome: turn.turnResult.outcome,
+        outcome: relativeOutcome(turn.turnResult.outcome, 'b'),
         reason: turn.turnResult.reason,
         yourCard: turn.turnResult.cardB,
         opponentCard: turn.turnResult.cardA,
@@ -147,8 +153,8 @@ export function attachRealtime(httpServer: HttpServer, db: Db): Server {
         playerBName: match.b.name,
         bIsBot: false,
       });
-      io.to(match.a.socketId).emit('match:end', outcome);
-      io.to(match.b.socketId).emit('match:end', outcome);
+      io.to(match.a.socketId).emit('match:end', personalizeOutcome(outcome, 'a'));
+      io.to(match.b.socketId).emit('match:end', personalizeOutcome(outcome, 'b'));
       activeMatches.delete(match.matchId);
       socketToMatch.delete(match.a.socketId);
       socketToMatch.delete(match.b.socketId);
@@ -234,7 +240,7 @@ export function attachRealtime(httpServer: HttpServer, db: Db): Server {
         bIsBot: false,
       });
       const remainingSocketId = winner === 'a' ? match.a.socketId : match.b.socketId;
-      io.to(remainingSocketId).emit('match:end', { ...outcome, opponentDisconnected: true });
+      io.to(remainingSocketId).emit('match:end', { ...personalizeOutcome(outcome, winner), opponentDisconnected: true });
       clearTimeout(match.turnTimeout);
       activeMatches.delete(match.matchId);
       socketToMatch.delete(match.a.socketId);

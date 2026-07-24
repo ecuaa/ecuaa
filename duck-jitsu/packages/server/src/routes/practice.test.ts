@@ -28,7 +28,7 @@ describe('tutorial practice match', () => {
       .set(auth(token))
       .send({ instanceId: highlight });
     expect(turn1.status).toBe(200);
-    expect(turn1.body.turnResult.outcome).toBe('a');
+    expect(turn1.body.turnResult.outcome).toBe('you');
     expect(turn1.body.view.status).toBe('in_progress');
 
     highlight = turn1.body.highlightInstanceId;
@@ -37,13 +37,15 @@ describe('tutorial practice match', () => {
       .set(auth(token))
       .send({ instanceId: highlight });
     expect(turn2.status).toBe(200);
-    expect(turn2.body.turnResult.outcome).toBe('a');
+    expect(turn2.body.turnResult.outcome).toBe('you');
     expect(turn2.body.view.status).toBe('finished');
-    expect(turn2.body.view.winner).toBe('a');
-    expect(turn2.body.outcome.winner).toBe('a');
+    expect(turn2.body.view.winner).toBe('you');
+    expect(turn2.body.outcome.winner).toBe('you');
   });
 
-  it('marks the tutorial completed on the player profile once won', async () => {
+  it('does NOT mark the tutorial completed just from winning the scripted battle', async () => {
+    // Winning the practice battle is only the midpoint of onboarding -- the starter pack and
+    // arena walkthrough steps still follow it, so the server must not flip this flag yet.
     const start = await request(ctx.app).post('/practice/start').set(auth(token)).send({ tutorial: true });
     let matchId = start.body.matchId;
     let highlight = start.body.highlightInstanceId;
@@ -56,7 +58,13 @@ describe('tutorial practice match', () => {
     await request(ctx.app).post(`/practice/${matchId}/play`).set(auth(token)).send({ instanceId: highlight });
 
     const me = await request(ctx.app).get('/me').set(auth(token));
-    expect(me.body.profile.tutorialCompleted).toBe(true);
+    expect(me.body.profile.tutorialCompleted).toBe(false);
+  });
+
+  it('only marks the tutorial completed when the client explicitly finishes onboarding', async () => {
+    const done = await request(ctx.app).post('/me/tutorial-complete').set(auth(token));
+    expect(done.status).toBe(200);
+    expect(done.body.profile.tutorialCompleted).toBe(true);
   });
 });
 
@@ -86,6 +94,6 @@ describe('regular practice match against the AI bot', () => {
       guard++;
     }
     expect(view.status).toBe('finished');
-    expect(['a', 'b', 'draw']).toContain(view.winner);
+    expect(['you', 'opponent', 'draw']).toContain(view.winner);
   });
 });

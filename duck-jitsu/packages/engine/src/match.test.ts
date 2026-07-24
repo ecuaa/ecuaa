@@ -106,6 +106,25 @@ describe('playTurn', () => {
     }
   });
 
+  it('ends the match once the shorter deck runs out, even if the other side still has cards', () => {
+    // Player A has only 1 card total; player B has plenty. After A's single card is played (and
+    // not part of a winning set), A has nothing left -- the match must end right there rather
+    // than waiting for B to also run out.
+    const cardA = card({ element: 'water', color: 'red' });
+    const bigDeckB = Array.from({ length: 12 }, () => card({ element: 'ice', color: 'green' }));
+    const state = createMatch('alice', [cardA], 'bob', bigDeckB);
+    expect(state.a.hand).toHaveLength(1);
+    expect(state.b.hand).toHaveLength(5);
+    expect(state.b.deck.length).toBeGreaterThan(0);
+
+    const { state: next } = playTurn(state, cardA.instanceId, state.b.hand[0].instanceId);
+
+    expect(next.status).toBe('finished');
+    if (next.winReason !== 'set-complete') {
+      expect(next.winReason).toBe('tiebreak-pile-size');
+    }
+  });
+
   it('throws if a card not in hand is played', () => {
     const state = createMatch('alice', [card()], 'bob', [card()]);
     expect(() => playTurn(state, 'not-a-real-instance-id', state.b.hand[0].instanceId)).toThrow();

@@ -13,7 +13,7 @@ import { randomUUID } from 'node:crypto';
 import type { Db } from './db';
 import { recordMatch } from './repo/matches';
 import { getOwnedCards } from './repo/ownedCards';
-import { getUserById, setTrophies } from './repo/users';
+import { addCurrency, getUserById, setTrophies } from './repo/users';
 
 export function buildPlayerDeck(db: Db, userId: string): PlayableCard[] {
   const owned = getOwnedCards(db, userId);
@@ -50,9 +50,22 @@ export interface MatchOutcome {
   winReason: string;
   trophyDeltaA: number;
   trophyDeltaB: number;
+  softCurrencyDeltaA: number;
+  softCurrencyDeltaB: number;
 }
 
-/** Applies ranked trophy changes (if applicable) and persists the match to history. */
+/** Soft-currency payout per match, by mode and result -- this is the game's core earn loop. */
+const SOFT_CURRENCY_REWARD: Record<MatchOutcomeInput['mode'], { win: number; loss: number; draw: number }> = {
+  practice: { win: 20, loss: 5, draw: 10 },
+  casual: { win: 40, loss: 15, draw: 20 },
+  ranked: { win: 60, loss: 20, draw: 30 },
+};
+
+function softCurrencyFor(mode: MatchOutcomeInput['mode'], result: 'win' | 'loss' | 'draw'): number {
+  return SOFT_CURRENCY_REWARD[mode][result];
+}
+
+/** Applies ranked trophy changes and match-earned soft currency, and persists match history. */
 export function finalizeMatch(db: Db, input: MatchOutcomeInput): MatchOutcome {
   const { matchState, mode, playerAId, playerBId, playerAName, playerBName, bIsBot } = input;
   if (matchState.status !== 'finished' || !matchState.winner) {
@@ -81,6 +94,20 @@ export function finalizeMatch(db: Db, input: MatchOutcomeInput): MatchOutcome {
     }
   }
 
+  const resultFor = (side: 'a' | 'b'): 'win' | 'loss' | 'draw' => {
+    if (matchState.winner === 'draw') return 'draw';
+    return matchState.winner === side ? 'win' : 'loss';
+  };
+
+  const softCurrencyDeltaA = softCurrencyFor(mode, resultFor('a'));
+  addCurrency(db, playerAId, 'soft', softCurrencyDeltaA);
+
+  let softCurrencyDeltaB = 0;
+  if (!bIsBot) {
+    softCurrencyDeltaB = softCurrencyFor(mode, resultFor('b'));
+    addCurrency(db, playerBId, 'soft', softCurrencyDeltaB);
+  }
+
   recordMatch(db, {
     id: randomUUID(),
     mode,
@@ -99,13 +126,40 @@ export function finalizeMatch(db: Db, input: MatchOutcomeInput): MatchOutcome {
     winReason: matchState.winReason ?? 'unknown',
     trophyDeltaA,
     trophyDeltaB,
+    softCurrencyDeltaA,
+    softCurrencyDeltaB,
+  };
+}
+
+export type RelativeOutcome = 'you' | 'opponent' | 'draw';
+
+/** Translates an absolute a/b/draw result into "you"/"opponent"/"draw" for one socket's side. */
+export function relativeOutcome(outcome: 'a' | 'b' | 'draw', side: 'a' | 'b'): RelativeOutcome {
+  if (outcome === 'draw') return 'draw';
+  return outcome === side ? 'you' : 'opponent';
+}
+
+export interface PersonalizedOutcome {
+  winner: RelativeOutcome;
+  winReason: string;
+  trophyDelta: number;
+  softCurrencyDelta: number;
+}
+
+export function personalizeOutcome(outcome: MatchOutcome, side: 'a' | 'b'): PersonalizedOutcome {
+  return {
+    winner: relativeOutcome(outcome.winner, side),
+    winReason: outcome.winReason,
+    trophyDelta: side === 'a' ? outcome.trophyDeltaA : outcome.trophyDeltaB,
+    softCurrencyDelta: side === 'a' ? outcome.softCurrencyDeltaA : outcome.softCurrencyDeltaB,
   };
 }
 
 /**
  * Public view of match state for one side: your own hand is fully visible, the opponent's hand
  * is only a count (hidden information), and both collected piles are fully visible since those
- * cards were revealed the moment they were won.
+ * cards were revealed the moment they were won. `winner` is expressed relative to this side
+ * ("you"/"opponent"/"draw") so client code never has to reason about absolute a/b sides.
  */
 export function serializeMatchView(state: MatchState, side: 'a' | 'b') {
   const self = side === 'a' ? state.a : state.b;
@@ -113,7 +167,7 @@ export function serializeMatchView(state: MatchState, side: 'a' | 'b') {
   return {
     status: state.status,
     turnNumber: state.turnNumber,
-    winner: state.winner,
+    winner: state.winner ? relativeOutcome(state.winner, side) : undefined,
     winReason: state.winReason,
     you: {
       hand: self.hand,
