@@ -1,11 +1,16 @@
-import { arenaForTrophies, isSenseiUnlocked, playerBelt } from '@duck-jitsu/engine';
+import { arenaForTrophies, isSenseiUnlocked, playerBelt, xpToNextLevel } from '@duck-jitsu/engine';
 import type { Db } from './db';
+import { getClanById, getClanMembership } from './repo/clans';
+import { countPendingIncoming } from './repo/friends';
+import { countUnclaimedMail } from './repo/mail';
 import { getOwnedCards } from './repo/ownedCards';
 import type { UserRow } from './repo/users';
 
 export function serializeProfile(db: Db, user: UserRow) {
   const arena = arenaForTrophies(user.trophies);
   const hasDefeatedSensei = Boolean(user.has_defeated_sensei);
+  const membership = getClanMembership(db, user.id);
+  const clan = membership ? getClanById(db, membership.clan_id) : undefined;
   return {
     id: user.id,
     displayName: user.display_name,
@@ -22,6 +27,12 @@ export function serializeProfile(db: Db, user: UserRow) {
     belt: playerBelt(arena.tier, hasDefeatedSensei),
     hasDefeatedSensei,
     senseiUnlocked: isSenseiUnlocked(user.trophies),
+    level: user.level,
+    xp: user.xp,
+    xpToNextLevel: xpToNextLevel(user.level),
+    clan: clan ? { id: clan.id, name: clan.name, bannerColor: clan.banner_color, role: membership!.role } : null,
+    unclaimedMailCount: countUnclaimedMail(db, user.id),
+    pendingFriendRequestCount: countPendingIncoming(db, user.id),
   };
 }
 

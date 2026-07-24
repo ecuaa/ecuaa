@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { LeaderboardApi, MatchHistoryApi } from '../api/endpoints';
 import type { LeaderboardEntry, MatchHistoryEntry } from '../api/types';
 import { BeltBadge } from '../components/BeltBadge';
@@ -15,6 +15,7 @@ const ROW_STAGGER_MS = 45;
 const MAX_STAGGER_INDEX = 12;
 
 export function RankingsScreen() {
+  const navigation = useNavigation();
   const [tab, setTab] = useState<'leaderboard' | 'history'>('leaderboard');
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [history, setHistory] = useState<MatchHistoryEntry[]>([]);
@@ -34,6 +35,9 @@ export function RankingsScreen() {
   return (
     <ScreenBackground mat>
       <Reveal>
+        <Text style={styles.backLink} onPress={() => navigation.goBack()} suppressHighlighting>
+          ← Back
+        </Text>
         <View style={styles.tabs}>
           <Pressable onPress={() => setTab('leaderboard')} style={[styles.tab, tab === 'leaderboard' && styles.tabActive]}>
             <Text style={[styles.tabText, tab === 'leaderboard' && styles.tabTextActive]}>Leaderboard</Text>
@@ -106,6 +110,7 @@ function resultColor(result: string) {
 }
 
 const styles = StyleSheet.create({
+  backLink: { color: colors.textMuted, fontWeight: '700', marginTop: 16, marginLeft: 16 },
   tabs: { flexDirection: 'row', margin: 16, backgroundColor: '#00000012', borderRadius: 12 },
   tab: { flex: 1, paddingVertical: 10, alignItems: 'center', borderRadius: 12 },
   tabActive: { backgroundColor: colors.bamboo },

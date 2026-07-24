@@ -3,6 +3,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { requireAuth } from '../auth';
 import type { Db } from '../db';
+import { bumpMissionsOfType } from '../missionProgress';
 import { grantCard } from '../repo/ownedCards';
 import { InsufficientFundsError, getUserById, setStarterPackClaimed, spendCurrency } from '../repo/users';
 import { serializeProfile } from '../serialize';
@@ -31,6 +32,7 @@ export function packsRouter(db: Db): Router {
     const cards = openPack('starter', 0);
     for (const card of cards) grantCard(db, user.id, card.id);
     setStarterPackClaimed(db, user.id);
+    bumpMissionsOfType(db, user.id, 'open_packs');
     const updated = getUserById(db, user.id)!;
     res.json({
       cards: cards.map((c) => ({ ...c, rarityBand: rarityBand(c) })),
@@ -69,6 +71,7 @@ export function packsRouter(db: Db): Router {
     const arena = arenaForTrophies(user.trophies);
     const cards = openPack(packDef.id, arena.tier);
     for (const card of cards) grantCard(db, user.id, card.id);
+    bumpMissionsOfType(db, user.id, 'open_packs');
     const updated = getUserById(db, user.id)!;
     res.json({
       cards: cards.map((c) => ({ ...c, rarityBand: rarityBand(c) })),

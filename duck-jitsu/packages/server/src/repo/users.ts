@@ -15,6 +15,11 @@ export interface UserRow {
   starter_pack_claimed: number;
   tutorial_completed: number;
   has_defeated_sensei: number;
+  xp: number;
+  level: number;
+  daily_reward_streak: number;
+  daily_reward_last_claimed_at: string | null;
+  spin_wheel_last_spun_at: string | null;
   created_at: string;
 }
 
@@ -115,6 +120,28 @@ export function spendCurrency(
   if (result.changes === 0) {
     throw new InsufficientFundsError();
   }
+}
+
+export function setXpAndLevel(db: Db, id: string, xp: number, level: number): void {
+  db.prepare('UPDATE users SET xp = ?, level = ? WHERE id = ?').run(xp, level, id);
+}
+
+export function setDailyRewardState(db: Db, id: string, streak: number, claimedAt: Date): void {
+  db.prepare('UPDATE users SET daily_reward_streak = ?, daily_reward_last_claimed_at = ? WHERE id = ?').run(
+    streak,
+    claimedAt.toISOString(),
+    id,
+  );
+}
+
+export function setSpinWheelLastSpunAt(db: Db, id: string, spunAt: Date): void {
+  db.prepare('UPDATE users SET spin_wheel_last_spun_at = ? WHERE id = ?').run(spunAt.toISOString(), id);
+}
+
+export function findUsersByNamePrefix(db: Db, prefix: string, excludeUserId: string, limit = 20): UserRow[] {
+  return db
+    .prepare('SELECT * FROM users WHERE display_name LIKE ? AND id != ? ORDER BY display_name ASC LIMIT ?')
+    .all(`${prefix}%`, excludeUserId, limit) as UserRow[];
 }
 
 export function topByTrophies(db: Db, limit: number): UserRow[] {

@@ -1,19 +1,22 @@
 import {
+  addXp,
   applyRankedResult,
   arenaForTrophies,
   buildDeck,
   cardsUnlockedUpToArena,
   createRng,
   shuffle,
+  xpFor,
   type MatchState,
   type OwnedCard,
   type PlayableCard,
 } from '@duck-jitsu/engine';
 import { randomUUID } from 'node:crypto';
 import type { Db } from './db';
+import { bumpMissionsOfType } from './missionProgress';
 import { recordMatch } from './repo/matches';
 import { getOwnedCards } from './repo/ownedCards';
-import { addCurrency, getUserById, setTrophies } from './repo/users';
+import { addCurrency, getUserById, setTrophies, setXpAndLevel } from './repo/users';
 
 export function buildPlayerDeck(db: Db, userId: string): PlayableCard[] {
   const owned = getOwnedCards(db, userId);
@@ -52,6 +55,10 @@ export interface MatchOutcome {
   trophyDeltaB: number;
   softCurrencyDeltaA: number;
   softCurrencyDeltaB: number;
+  xpGainedA: number;
+  xpGainedB: number;
+  leveledUpA: boolean;
+  leveledUpB: boolean;
 }
 
 /** Soft-currency payout per match, by mode and result -- this is the game's core earn loop. */
@@ -110,6 +117,18 @@ export function finalizeMatch(db: Db, input: MatchOutcomeInput): MatchOutcome {
     addCurrency(db, playerBId, 'soft', softCurrencyDeltaB);
   }
 
+  const { xpGained: xpGainedA, leveledUp: leveledUpA } = awardXp(db, playerAId, mode, resultFor('a'));
+  bumpMissionsOfType(db, playerAId, 'play_matches');
+  if (resultFor('a') === 'win') bumpMissionsOfType(db, playerAId, 'win_matches');
+
+  let xpGainedB = 0;
+  let leveledUpB = false;
+  if (!bIsBot) {
+    ({ xpGained: xpGainedB, leveledUp: leveledUpB } = awardXp(db, playerBId, mode, resultFor('b')));
+    bumpMissionsOfType(db, playerBId, 'play_matches');
+    if (resultFor('b') === 'win') bumpMissionsOfType(db, playerBId, 'win_matches');
+  }
+
   recordMatch(db, {
     id: randomUUID(),
     mode,
@@ -130,7 +149,25 @@ export function finalizeMatch(db: Db, input: MatchOutcomeInput): MatchOutcome {
     trophyDeltaB,
     softCurrencyDeltaA,
     softCurrencyDeltaB,
+    xpGainedA,
+    xpGainedB,
+    leveledUpA,
+    leveledUpB,
   };
+}
+
+function awardXp(
+  db: Db,
+  userId: string,
+  mode: MatchOutcomeInput['mode'],
+  result: 'win' | 'loss' | 'draw',
+): { xpGained: number; leveledUp: boolean } {
+  const user = getUserById(db, userId);
+  if (!user) return { xpGained: 0, leveledUp: false };
+  const gained = xpFor(mode, result);
+  const next = addXp({ level: user.level, xp: user.xp }, gained);
+  setXpAndLevel(db, userId, next.xp, next.level);
+  return { xpGained: gained, leveledUp: next.leveledUp };
 }
 
 export type RelativeOutcome = 'you' | 'opponent' | 'draw';
@@ -146,6 +183,8 @@ export interface PersonalizedOutcome {
   winReason: string;
   trophyDelta: number;
   softCurrencyDelta: number;
+  xpGained: number;
+  leveledUp: boolean;
 }
 
 export function personalizeOutcome(outcome: MatchOutcome, side: 'a' | 'b'): PersonalizedOutcome {
@@ -154,6 +193,8 @@ export function personalizeOutcome(outcome: MatchOutcome, side: 'a' | 'b'): Pers
     winReason: outcome.winReason,
     trophyDelta: side === 'a' ? outcome.trophyDeltaA : outcome.trophyDeltaB,
     softCurrencyDelta: side === 'a' ? outcome.softCurrencyDeltaA : outcome.softCurrencyDeltaB,
+    xpGained: side === 'a' ? outcome.xpGainedA : outcome.xpGainedB,
+    leveledUp: side === 'a' ? outcome.leveledUpA : outcome.leveledUpB,
   };
 }
 

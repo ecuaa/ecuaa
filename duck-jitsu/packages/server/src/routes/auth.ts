@@ -4,8 +4,24 @@ import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import type { Db } from '../db';
 import { requireAuth, signToken } from '../auth';
+import { sendMail } from '../repo/mail';
 import { createUser, getUserByEmail, getUserById } from '../repo/users';
 import { serializeProfile } from '../serialize';
+
+function sendWelcomeMail(db: Db, userId: string): void {
+  sendMail(db, {
+    userId,
+    title: 'Welcome to the Dojo!',
+    body: "A gift from the Sensei to get you started on your Duck Jitsu journey.",
+    rewardSoft: 100,
+    rewardPremium: 10,
+  });
+  sendMail(db, {
+    userId,
+    title: 'Daily Rewards Await',
+    body: 'Check in every day for a login bonus, and spin the wheel for a bonus prize!',
+  });
+}
 
 const registerSchema = z.object({
   email: z.string().email(),
@@ -44,6 +60,7 @@ export function authRouter(db: Db): Router {
       isGuest: false,
       displayName,
     });
+    sendWelcomeMail(db, user.id);
     res.status(201).json({ token: signToken(user.id), profile: serializeProfile(db, user) });
   });
 
@@ -76,6 +93,7 @@ export function authRouter(db: Db): Router {
       isGuest: true,
       displayName: parsed.data.displayName ?? `Guest Duck ${id.slice(0, 4)}`,
     });
+    sendWelcomeMail(db, user.id);
     res.status(201).json({ token: signToken(user.id), profile: serializeProfile(db, user) });
   });
 

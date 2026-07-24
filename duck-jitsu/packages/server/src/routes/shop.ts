@@ -3,6 +3,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { requireAuth } from '../auth';
 import type { Db } from '../db';
+import { bumpMissionsOfType } from '../missionProgress';
 import { getOwnedCards, grantCard } from '../repo/ownedCards';
 import { InsufficientFundsError, addCurrency, getUserById, spendCurrency } from '../repo/users';
 import { serializeProfile } from '../serialize';
@@ -67,6 +68,7 @@ export function shopRouter(db: Db): Router {
       }
     }
 
+    bumpMissionsOfType(db, user.id, 'purchase_shop_offer');
     const updated = getUserById(db, user.id)!;
     res.json({ profile: serializeProfile(db, updated) });
   });

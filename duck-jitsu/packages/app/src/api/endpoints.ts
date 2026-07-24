@@ -3,14 +3,24 @@ import { api } from './client';
 import type {
   ArenaMineResponse,
   AuthResponse,
+  ClanDetail,
+  ClanSummary,
+  DailyRewardClaimResponse,
+  DailyRewardStatus,
+  FriendSearchResult,
+  FriendsResponse,
   IapProduct,
   LeaderboardEntry,
+  MailMessage,
   MatchHistoryEntry,
+  MissionView,
   PackOpenResponse,
   PracticePlayResponse,
   PracticeStartResponse,
   Profile,
   ShopOffer,
+  SpinWheelResult,
+  SpinWheelStatus,
 } from './types';
 
 export const AuthApi = {
@@ -67,4 +77,42 @@ export const PracticeApi = {
     api.post<PracticeStartResponse>('/practice/start', opts),
   play: (matchId: string, instanceId: string) =>
     api.post<PracticePlayResponse>(`/practice/${matchId}/play`, { instanceId }),
+};
+
+export const MissionsApi = {
+  today: () => api.get<{ missions: MissionView[] }>('/missions/today'),
+  claim: (missionId: string) => api.post<{ missions: MissionView[]; profile: Profile }>('/missions/claim', { missionId }),
+};
+
+export const DailyRewardApi = {
+  status: () => api.get<DailyRewardStatus>('/daily-reward'),
+  claim: () => api.post<DailyRewardClaimResponse>('/daily-reward/claim'),
+};
+
+export const SpinWheelApi = {
+  status: () => api.get<SpinWheelStatus>('/spin-wheel'),
+  spin: () => api.post<SpinWheelResult>('/spin-wheel/spin'),
+};
+
+export const ClansApi = {
+  list: () => api.get<{ clans: ClanSummary[] }>('/clans'),
+  mine: () => api.get<{ clan: ClanDetail | null }>('/clans/mine'),
+  create: (name: string, bannerColor: string, description?: string) =>
+    api.post<{ clan: ClanDetail }>('/clans', { name, bannerColor, description }),
+  join: (clanId: string) => api.post<{ clan: ClanDetail }>(`/clans/${clanId}/join`),
+  leave: () => api.post<{ clan: null }>('/clans/leave'),
+};
+
+export const MailApi = {
+  list: () => api.get<{ mail: MailMessage[] }>('/mail'),
+  claim: (mailId: string) => api.post<{ mail: MailMessage[]; profile: Profile }>(`/mail/${mailId}/claim`),
+};
+
+export const FriendsApi = {
+  list: () => api.get<FriendsResponse>('/friends'),
+  search: (q: string) => api.get<{ results: FriendSearchResult[] }>(`/friends/search?q=${encodeURIComponent(q)}`),
+  request: (targetUserId: string) => api.post<{ ok: true }>('/friends/request', { targetUserId }),
+  accept: (linkId: string) => api.post<{ ok: true }>(`/friends/${linkId}/accept`),
+  decline: (linkId: string) => api.post<{ ok: true }>(`/friends/${linkId}/decline`),
+  remove: (linkId: string) => api.delete<{ ok: true }>(`/friends/${linkId}`),
 };
