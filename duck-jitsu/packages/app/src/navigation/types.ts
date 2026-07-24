@@ -1,7 +1,7 @@
 export type RootStackParamList = {
   MainTabs: undefined;
   Tutorial: undefined;
-  Battle: { mode: 'practice' | 'casual' | 'ranked' };
+  Battle: { mode: 'practice' | 'casual' | 'ranked' | 'sensei' };
   PackOpening: { source: 'starter' | 'basic' | 'premium' };
 };
 

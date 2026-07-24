@@ -2,7 +2,7 @@ import type { Db } from '../db';
 
 export interface MatchRecord {
   id: string;
-  mode: 'casual' | 'ranked' | 'practice';
+  mode: 'casual' | 'ranked' | 'practice' | 'sensei';
   playerAId: string;
   playerBId: string;
   playerAName: string;

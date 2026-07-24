@@ -10,3 +10,4 @@ export * from './leveling';
 export * from './shop';
 export * from './matchmaking';
 export * from './deck';
+export * from './belts';

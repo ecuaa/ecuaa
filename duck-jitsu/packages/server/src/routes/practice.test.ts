@@ -1,5 +1,7 @@
+import { ARENAS } from '@duck-jitsu/engine';
 import request from 'supertest';
 import { beforeEach, describe, expect, it } from 'vitest';
+import { setDefeatedSensei, setTrophies } from '../repo/users';
 import { makeTestApp } from '../testUtils';
 
 let ctx: ReturnType<typeof makeTestApp>;
@@ -95,5 +97,47 @@ describe('regular practice match against the AI bot', () => {
     }
     expect(view.status).toBe('finished');
     expect(['you', 'opponent', 'draw']).toContain(view.winner);
+  });
+});
+
+describe('Sensei boss fight', () => {
+  it('is locked until the player reaches the final arena', async () => {
+    await request(ctx.app).post('/packs/starter/open').set(auth(token));
+    const res = await request(ctx.app).post('/practice/start').set(auth(token)).send({ sensei: true });
+    expect(res.status).toBe(403);
+  });
+
+  it('unlocks at the final arena, pits the player against an all-special-card deck, and plays to completion', async () => {
+    await request(ctx.app).post('/packs/starter/open').set(auth(token));
+    const me = await request(ctx.app).get('/me').set(auth(token));
+    setTrophies(ctx.db, me.body.profile.id, ARENAS[ARENAS.length - 1].trophyRequirement);
+
+    const start = await request(ctx.app).post('/practice/start').set(auth(token)).send({ sensei: true });
+    expect(start.status).toBe(201);
+    expect(start.body.opponentName).toBe('The Sensei');
+    const matchId = start.body.matchId;
+
+    let view = start.body.view;
+    let guard = 0;
+    while (view.status !== 'finished' && guard < 100) {
+      const cardId = view.you.hand[0].instanceId;
+      const turn = await request(ctx.app)
+        .post(`/practice/${matchId}/play`)
+        .set(auth(token))
+        .send({ instanceId: cardId });
+      expect(turn.status).toBe(200);
+      view = turn.body.view;
+      guard++;
+    }
+    expect(view.status).toBe('finished');
+  });
+
+  it('awards the Black Belt once has_defeated_sensei is set, overriding the normal arena belt', async () => {
+    const me = await request(ctx.app).get('/me').set(auth(token));
+    expect(me.body.profile.belt).toBe('white');
+    setDefeatedSensei(ctx.db, me.body.profile.id);
+    const after = await request(ctx.app).get('/me').set(auth(token));
+    expect(after.body.profile.belt).toBe('black');
+    expect(after.body.profile.hasDefeatedSensei).toBe(true);
   });
 });

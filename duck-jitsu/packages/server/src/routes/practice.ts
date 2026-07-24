@@ -1,7 +1,9 @@
 import {
   AI_DIFFICULTIES,
   buildDeck,
+  buildSenseiDeck,
   createMatch,
+  isSenseiUnlocked,
   pickAiCard,
   pickScriptedCard,
   playTurn,
@@ -24,12 +26,20 @@ import {
   relativeOutcome,
   serializeMatchView,
 } from '../matchEngine';
-import { getUserById } from '../repo/users';
+import { getUserById, setDefeatedSensei } from '../repo/users';
+
+type SessionMode = 'tutorial' | 'practice' | 'sensei';
+
+const OPPONENT_NAME: Record<SessionMode, string> = {
+  tutorial: 'Coach Quackers',
+  practice: 'Practice Bot',
+  sensei: 'The Sensei',
+};
 
 interface PracticeSession {
   matchId: string;
   userId: string;
-  isTutorial: boolean;
+  mode: SessionMode;
   state: MatchState;
   lastPlayerElement?: Element;
 }
@@ -37,11 +47,11 @@ interface PracticeSession {
 const sessions = new Map<string, PracticeSession>();
 
 function highlightFor(session: PracticeSession): string | undefined {
-  if (!session.isTutorial) return undefined;
+  if (session.mode !== 'tutorial') return undefined;
   return session.state.a.hand[0]?.instanceId;
 }
 
-const startSchema = z.object({ tutorial: z.boolean().optional() });
+const startSchema = z.object({ tutorial: z.boolean().optional(), sensei: z.boolean().optional() });
 const playSchema = z.object({ instanceId: z.string() });
 
 export function practiceRouter(db: Db): Router {
@@ -60,12 +70,25 @@ export function practiceRouter(db: Db): Router {
       return;
     }
 
-    const isTutorial = parsed.data.tutorial ?? false;
+    const mode: SessionMode = parsed.data.sensei ? 'sensei' : parsed.data.tutorial ? 'tutorial' : 'practice';
+
     let playerDeck;
     let aiDeck;
-    if (isTutorial) {
+    if (mode === 'tutorial') {
       playerDeck = buildDeck(TUTORIAL_PLAYER_DECK_IDS.map((cardId) => ({ cardId, level: 1, duplicates: 0 })));
       aiDeck = buildDeck(TUTORIAL_AI_DECK_IDS.map((cardId) => ({ cardId, level: 1, duplicates: 0 })));
+    } else if (mode === 'sensei') {
+      if (!isSenseiUnlocked(user.trophies)) {
+        res.status(403).json({ error: 'Reach the final Arena before you can challenge the Sensei.' });
+        return;
+      }
+      try {
+        playerDeck = buildPlayerDeck(db, user.id);
+      } catch {
+        res.status(400).json({ error: 'You need at least one card to play -- open your starter pack first' });
+        return;
+      }
+      aiDeck = buildSenseiDeck();
     } else {
       try {
         playerDeck = buildPlayerDeck(db, user.id);
@@ -78,12 +101,12 @@ export function practiceRouter(db: Db): Router {
 
     const matchId = randomUUID();
     const state = createMatch(user.id, playerDeck, 'ai', aiDeck);
-    const session: PracticeSession = { matchId, userId: user.id, isTutorial, state };
+    const session: PracticeSession = { matchId, userId: user.id, mode, state };
     sessions.set(matchId, session);
 
     res.status(201).json({
       matchId,
-      opponentName: isTutorial ? 'Sensei Bot' : 'Practice Bot',
+      opponentName: OPPONENT_NAME[mode],
       view: serializeMatchView(state, 'a'),
       highlightInstanceId: highlightFor(session),
     });
@@ -105,9 +128,10 @@ export function practiceRouter(db: Db): Router {
       return;
     }
 
-    const aiCard = session.isTutorial
-      ? pickScriptedCard(session.state.b.hand)
-      : pickAiCard(session.state.b.hand, session.lastPlayerElement, Math.random, AI_DIFFICULTIES.practice);
+    const aiCard =
+      session.mode === 'tutorial'
+        ? pickScriptedCard(session.state.b.hand)
+        : pickAiCard(session.state.b.hand, session.lastPlayerElement, Math.random, AI_DIFFICULTIES[session.mode]);
 
     let turn;
     try {
@@ -124,15 +148,18 @@ export function practiceRouter(db: Db): Router {
     if (turn.state.status === 'finished') {
       const user = getUserById(db, session.userId)!;
       const rawOutcome = finalizeMatch(db, {
-        mode: 'practice',
+        mode: session.mode === 'tutorial' ? 'practice' : session.mode,
         matchState: turn.state,
         playerAId: session.userId,
         playerBId: 'AI',
         playerAName: user.display_name,
-        playerBName: session.isTutorial ? 'Sensei Bot' : 'Practice Bot',
+        playerBName: OPPONENT_NAME[session.mode],
         bIsBot: true,
       });
       outcome = personalizeOutcome(rawOutcome, 'a'); // the human player is always side 'a' here
+      if (session.mode === 'sensei' && turn.state.winner === 'a') {
+        setDefeatedSensei(db, session.userId);
+      }
       // Note: winning the scripted tutorial battle is only the middle of onboarding (starter
       // pack + arena walkthrough steps still follow) -- tutorialCompleted is set later, by the
       // client explicitly calling POST /me/tutorial-complete once the whole flow finishes.

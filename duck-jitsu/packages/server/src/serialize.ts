@@ -1,10 +1,11 @@
-import { arenaForTrophies } from '@duck-jitsu/engine';
+import { arenaForTrophies, isSenseiUnlocked, playerBelt } from '@duck-jitsu/engine';
 import type { Db } from './db';
 import { getOwnedCards } from './repo/ownedCards';
 import type { UserRow } from './repo/users';
 
 export function serializeProfile(db: Db, user: UserRow) {
   const arena = arenaForTrophies(user.trophies);
+  const hasDefeatedSensei = Boolean(user.has_defeated_sensei);
   return {
     id: user.id,
     displayName: user.display_name,
@@ -18,6 +19,9 @@ export function serializeProfile(db: Db, user: UserRow) {
     starterPackClaimed: Boolean(user.starter_pack_claimed),
     tutorialCompleted: Boolean(user.tutorial_completed),
     ownedCards: getOwnedCards(db, user.id),
+    belt: playerBelt(arena.tier, hasDefeatedSensei),
+    hasDefeatedSensei,
+    senseiUnlocked: isSenseiUnlocked(user.trophies),
   };
 }
 

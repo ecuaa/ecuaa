@@ -63,7 +63,8 @@ export const IapApi = {
 };
 
 export const PracticeApi = {
-  start: (tutorial: boolean) => api.post<PracticeStartResponse>('/practice/start', { tutorial }),
+  start: (opts: { tutorial?: boolean; sensei?: boolean } = {}) =>
+    api.post<PracticeStartResponse>('/practice/start', opts),
   play: (matchId: string, instanceId: string) =>
     api.post<PracticePlayResponse>(`/practice/${matchId}/play`, { instanceId }),
 };

@@ -16,9 +16,11 @@ export interface AiDifficulty {
   rarityBias: number;
 }
 
-export const AI_DIFFICULTIES: Record<'practice' | 'ranked_bot', AiDifficulty> = {
+export const AI_DIFFICULTIES: Record<'practice' | 'ranked_bot' | 'sensei', AiDifficulty> = {
   practice: { counterBias: 2.5, rarityBias: 1.05 },
   ranked_bot: { counterBias: 3.5, rarityBias: 1.15 },
+  /** The Sensei: reads your last move hard and almost never misses a counter. */
+  sensei: { counterBias: 40, rarityBias: 1.4 },
 };
 
 /**

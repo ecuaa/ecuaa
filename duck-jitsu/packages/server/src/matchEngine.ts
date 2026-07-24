@@ -35,7 +35,7 @@ export function buildAiDeck(arenaTier: number, seed: number, size = 12): Playabl
 }
 
 export interface MatchOutcomeInput {
-  mode: 'casual' | 'ranked' | 'practice';
+  mode: 'casual' | 'ranked' | 'practice' | 'sensei';
   matchState: MatchState;
   playerAId: string;
   playerBId: string;
@@ -59,6 +59,8 @@ const SOFT_CURRENCY_REWARD: Record<MatchOutcomeInput['mode'], { win: number; los
   practice: { win: 20, loss: 5, draw: 10 },
   casual: { win: 40, loss: 15, draw: 20 },
   ranked: { win: 60, loss: 20, draw: 30 },
+  /** Beating the Sensei is the biggest single payout in the game -- losing still pays a little. */
+  sensei: { win: 1000, loss: 25, draw: 25 },
 };
 
 function softCurrencyFor(mode: MatchOutcomeInput['mode'], result: 'win' | 'loss' | 'draw'): number {

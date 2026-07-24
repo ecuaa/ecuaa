@@ -19,6 +19,7 @@ CREATE TABLE IF NOT EXISTS users (
   ads_removed INTEGER NOT NULL DEFAULT 0,
   starter_pack_claimed INTEGER NOT NULL DEFAULT 0,
   tutorial_completed INTEGER NOT NULL DEFAULT 0,
+  has_defeated_sensei INTEGER NOT NULL DEFAULT 0,
   created_at TEXT NOT NULL
 );
 
@@ -57,5 +58,15 @@ export function createDb(dbPath: string): Db {
   const db = new Database(dbPath);
   db.pragma('journal_mode = WAL');
   db.exec(MIGRATIONS);
+  // Defensive migration for databases created before this column existed -- CREATE TABLE IF NOT
+  // EXISTS above is a no-op against an already-existing table, so new columns need this instead.
+  ensureColumn(db, 'users', 'has_defeated_sensei', "INTEGER NOT NULL DEFAULT 0");
   return db;
+}
+
+function ensureColumn(db: Db, table: string, column: string, definition: string): void {
+  const columns = db.prepare(`PRAGMA table_info(${table})`).all() as { name: string }[];
+  if (!columns.some((c) => c.name === column)) {
+    db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
+  }
 }

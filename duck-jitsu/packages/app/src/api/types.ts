@@ -1,6 +1,6 @@
-import type { CardDef, OwnedCard, PlayableCard, RarityBand, ShopOffer } from '@duck-jitsu/engine';
+import type { BeltColor, CardDef, OwnedCard, PlayableCard, RarityBand, ShopOffer } from '@duck-jitsu/engine';
 
-export type { ShopOffer, RarityBand };
+export type { ShopOffer, RarityBand, BeltColor };
 
 export interface Avatar {
   color: string;
@@ -20,6 +20,9 @@ export interface Profile {
   starterPackClaimed: boolean;
   tutorialCompleted: boolean;
   ownedCards: OwnedCard[];
+  belt: BeltColor;
+  hasDefeatedSensei: boolean;
+  senseiUnlocked: boolean;
 }
 
 export interface AuthResponse {

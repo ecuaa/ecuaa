@@ -153,3 +153,22 @@ export const TUTORIAL_AI_DECK_IDS: string[] = [
   'ice-purple-t0-1',
   'fire-green-t0-1',
 ];
+
+/** The Sensei's boss deck: nothing but Special Cards, three copies of each. */
+export const SENSEI_DECK_CARD_IDS: string[] = [
+  'special-cannonball-quack',
+  'special-cannonball-quack',
+  'special-cannonball-quack',
+  'special-phoenix-feather',
+  'special-phoenix-feather',
+  'special-phoenix-feather',
+  'special-glacier-general',
+  'special-glacier-general',
+  'special-glacier-general',
+  'special-golden-mallard',
+  'special-golden-mallard',
+  'special-golden-mallard',
+];
+
+/** Every card in the Sensei's deck is maxed out, regardless of each card's normal level cap. */
+export const SENSEI_CARD_LEVEL = 10;

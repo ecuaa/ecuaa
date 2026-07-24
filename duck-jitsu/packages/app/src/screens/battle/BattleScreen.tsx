@@ -102,6 +102,17 @@ export function BattleScreen() {
     engine.playCard(instanceId);
   }
 
+  if (engine.error) {
+    return (
+      <ScreenBackground>
+        <View style={styles.centered}>
+          <Text style={styles.queuingText}>{engine.error}</Text>
+          <PrimaryButton title="Back" onPress={() => navigation.goBack()} />
+        </View>
+      </ScreenBackground>
+    );
+  }
+
   if (engine.phase === 'queuing') {
     return (
       <ScreenBackground>
@@ -202,9 +213,19 @@ export function BattleScreen() {
         <View style={styles.resultOverlay}>
           <View style={styles.resultCard}>
             <Text style={styles.resultTitle}>
-              {engine.outcome?.winner === 'you' ? 'Victory!' : engine.outcome?.winner === 'draw' ? "It's a draw" : 'Defeat'}
+              {route.params.mode === 'sensei' && engine.outcome?.winner === 'you'
+                ? '🥋 BLACK BELT EARNED!'
+                : engine.outcome?.winner === 'you'
+                  ? 'Victory!'
+                  : engine.outcome?.winner === 'draw'
+                    ? "It's a draw"
+                    : 'Defeat'}
             </Text>
-            <Text style={styles.resultReason}>{describeReason(engine.outcome?.winReason)}</Text>
+            <Text style={styles.resultReason}>
+              {route.params.mode === 'sensei' && engine.outcome?.winner === 'you'
+                ? 'You have defeated the Sensei. Respect.'
+                : describeReason(engine.outcome?.winReason)}
+            </Text>
             {!!engine.outcome?.trophyDelta && (
               <Text style={[styles.trophyDelta, { color: engine.outcome.trophyDelta > 0 ? colors.success : colors.danger }]}>
                 {engine.outcome.trophyDelta > 0 ? '+' : ''}

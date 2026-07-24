@@ -115,7 +115,7 @@ function BattleStep({ onWon }: { onWon: () => void }) {
     <View style={styles.battleWrap}>
       <View style={styles.tutorialOpponentRow}>
         <DuckAvatar size={48} color={engine.opponentAvatar.color} accessory="none" />
-        <Text style={styles.tutorialOpponentName}>{engine.opponentName ?? 'Sensei Bot'}</Text>
+        <Text style={styles.tutorialOpponentName}>{engine.opponentName ?? 'Coach Quackers'}</Text>
       </View>
 
       <Text style={styles.coachText}>

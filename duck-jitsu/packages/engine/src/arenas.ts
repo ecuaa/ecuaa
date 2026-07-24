@@ -80,3 +80,12 @@ export function arenaForTrophies(trophies: number): ArenaDef {
 export function nextArena(currentTier: number): ArenaDef | undefined {
   return ARENAS.find((a) => a.tier === currentTier + 1);
 }
+
+export function maxArenaTier(): number {
+  return ARENAS[ARENAS.length - 1].tier;
+}
+
+/** The Sensei is only challengeable once a player has climbed to the final arena. */
+export function isSenseiUnlocked(trophies: number): boolean {
+  return arenaForTrophies(trophies).tier >= maxArenaTier();
+}

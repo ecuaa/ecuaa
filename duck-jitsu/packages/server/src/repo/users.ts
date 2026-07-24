@@ -14,6 +14,7 @@ export interface UserRow {
   ads_removed: number;
   starter_pack_claimed: number;
   tutorial_completed: number;
+  has_defeated_sensei: number;
   created_at: string;
 }
 
@@ -72,6 +73,11 @@ export function setTutorialCompleted(db: Db, id: string): void {
 
 export function setAdsRemoved(db: Db, id: string): void {
   db.prepare('UPDATE users SET ads_removed = 1 WHERE id = ?').run(id);
+}
+
+/** Permanently records a Sensei victory. This is the only way a player ever earns the Black Belt. */
+export function setDefeatedSensei(db: Db, id: string): void {
+  db.prepare('UPDATE users SET has_defeated_sensei = 1 WHERE id = ?').run(id);
 }
 
 export function setTrophies(db: Db, id: string, trophies: number): void {

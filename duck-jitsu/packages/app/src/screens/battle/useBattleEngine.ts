@@ -5,7 +5,7 @@ import { connectSocket, disconnectSocket } from '../../api/socket';
 import type { Avatar, MatchOutcome, MatchTurnResult, MatchView } from '../../api/types';
 import { useAuthStore } from '../../store/authStore';
 
-export type BattleMode = 'practice' | 'tutorial' | 'casual' | 'ranked';
+export type BattleMode = 'practice' | 'tutorial' | 'sensei' | 'casual' | 'ranked';
 export type BattlePhase = 'queuing' | 'battle' | 'finished';
 
 /** Fixed look for AI opponents (practice/tutorial) -- a steely, none-accessory duck. */
@@ -26,7 +26,7 @@ export interface BattleEngineState {
   cancelQueue: () => void;
 }
 
-const REST_MODES: BattleMode[] = ['practice', 'tutorial'];
+const REST_MODES: BattleMode[] = ['practice', 'tutorial', 'sensei'];
 
 /** Looks up whether a winning card is a Special Card, and its unique win-animation id, if any. */
 export function specialAnimationFor(turn: MatchTurnResult | null): string | null {
@@ -58,7 +58,7 @@ export function useBattleEngine(mode: BattleMode): BattleEngineState {
   useEffect(() => {
     if (!isRest) return;
     let cancelled = false;
-    PracticeApi.start(mode === 'tutorial')
+    PracticeApi.start({ tutorial: mode === 'tutorial', sensei: mode === 'sensei' })
       .then((res) => {
         if (cancelled) return;
         matchIdRef.current = res.matchId;

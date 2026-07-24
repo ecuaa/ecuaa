@@ -45,3 +45,16 @@ export const elementColors: Record<'fire' | 'water' | 'ice', string> = {
   water: colors.water,
   ice: colors.ice,
 };
+
+/** Karate rank colors, white through black. Black is trimmed in gold since it's the rarest. */
+export const BELT_COLORS: Record<string, { base: string; trim: string; label: string }> = {
+  white: { base: '#F8F9FA', trim: '#CED4DA', label: 'White Belt' },
+  yellow: { base: '#F2C94C', trim: '#B8860B', label: 'Yellow Belt' },
+  orange: { base: '#FF7A45', trim: '#D9480F', label: 'Orange Belt' },
+  green: { base: '#3F9142', trim: '#276B31', label: 'Green Belt' },
+  blue: { base: '#3B82F6', trim: '#1D4ED8', label: 'Blue Belt' },
+  purple: { base: '#9061F9', trim: '#5F3DC4', label: 'Purple Belt' },
+  brown: { base: '#8B5A2B', trim: '#5C3A1A', label: 'Brown Belt' },
+  red: { base: '#F03E3E', trim: '#A61E1E', label: 'Red Belt' },
+  black: { base: '#1F2933', trim: '#F2C94C', label: 'Black Belt' },
+};
