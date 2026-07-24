@@ -29,6 +29,7 @@ const LABELS: Record<keyof MainTabsParamList, string> = {
 export function MainTabsNavigator() {
   return (
     <Tab.Navigator
+      initialRouteName="Arena"
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarActiveTintColor: colors.bambooDark,
