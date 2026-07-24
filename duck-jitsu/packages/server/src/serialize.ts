@@ -1,0 +1,24 @@
+import { arenaForTrophies } from '@duck-jitsu/engine';
+import type { Db } from './db';
+import { getOwnedCards } from './repo/ownedCards';
+import type { UserRow } from './repo/users';
+
+export function serializeProfile(db: Db, user: UserRow) {
+  const arena = arenaForTrophies(user.trophies);
+  return {
+    id: user.id,
+    displayName: user.display_name,
+    isGuest: Boolean(user.is_guest),
+    avatar: { color: user.avatar_color, accessory: user.avatar_accessory },
+    softCurrency: user.soft_currency,
+    premiumCurrency: user.premium_currency,
+    trophies: user.trophies,
+    arena: { tier: arena.tier, id: arena.id, name: arena.name },
+    adsRemoved: Boolean(user.ads_removed),
+    starterPackClaimed: Boolean(user.starter_pack_claimed),
+    tutorialCompleted: Boolean(user.tutorial_completed),
+    ownedCards: getOwnedCards(db, user.id),
+  };
+}
+
+export type PublicProfile = ReturnType<typeof serializeProfile>;

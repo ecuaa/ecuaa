@@ -1,0 +1,23 @@
+{
+  "name": "duck-jitsu",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Duck Jitsu - a 1v1 elemental duck card battle game",
+  "workspaces": [
+    "packages/engine",
+    "packages/server",
+    "packages/app"
+  ],
+  "scripts": {
+    "build:engine": "npm run build -w packages/engine",
+    "test:engine": "npm run test -w packages/engine",
+    "test:server": "npm run test -w packages/server",
+    "test": "npm run test:engine && npm run test:server",
+    "dev:server": "npm run dev -w packages/server",
+    "dev:app": "npm run start -w packages/app",
+    "typecheck": "npm run typecheck -w packages/engine && npm run typecheck -w packages/server && npm run typecheck -w packages/app"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3"
+  }
+}
