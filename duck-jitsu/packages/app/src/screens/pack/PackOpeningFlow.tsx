@@ -1,22 +1,14 @@
 import { useEffect, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
-import Animated, {
-  Easing,
-  useAnimatedStyle,
-  useSharedValue,
-  withRepeat,
-  withSequence,
-  withTiming,
-} from 'react-native-reanimated';
+import { StyleSheet, Text, View } from 'react-native';
 import { PacksApi } from '../../api/endpoints';
 import type { RevealedCard } from '../../api/types';
-import { CardBack, GameCard } from '../../components/GameCard';
+import { GameCard } from '../../components/GameCard';
 import { PrimaryButton } from '../../components/PrimaryButton';
 import { ScreenBackground } from '../../components/ScreenBackground';
 import { playSfx } from '../../sound/soundManager';
 import { useAuthStore } from '../../store/authStore';
-import { colors } from '../../theme/colors';
 import { RevealCard } from './RevealCard';
+import { RipPackEnvelope } from './RipPackEnvelope';
 
 type Stage = 'loading' | 'closed' | 'opening' | 'revealing' | 'done';
 
@@ -47,7 +39,7 @@ export function PackOpeningFlow({ source, onDone }: Props) {
   function beginOpening() {
     playSfx('packOpen');
     setStage('opening');
-    setTimeout(() => setStage('revealing'), 700);
+    setTimeout(() => setStage('revealing'), 480);
   }
 
   function revealNext() {
@@ -73,14 +65,10 @@ export function PackOpeningFlow({ source, onDone }: Props) {
     <ScreenBackground>
       <View style={styles.centered}>
         {(stage === 'loading' || stage === 'closed' || stage === 'opening') && (
-          <PackEnvelope
-            shaking={stage === 'closed'}
-            bursting={stage === 'opening'}
-            onPress={stage === 'closed' ? beginOpening : undefined}
-          />
+          <RipPackEnvelope interactive={stage === 'closed'} onRipped={beginOpening} />
         )}
 
-        {stage === 'closed' && <Text style={styles.tapHint}>Tap the pack to open it!</Text>}
+        {stage === 'closed' && <Text style={styles.tapHint}>Drag the pack apart to rip it open!</Text>}
 
         {stage === 'revealing' && cards[revealIndex] && (
           <RevealCard key={`${cards[revealIndex].id}-${revealIndex}`} card={cards[revealIndex]} onContinue={revealNext} />
@@ -111,48 +99,6 @@ export function PackOpeningFlow({ source, onDone }: Props) {
         )}
       </View>
     </ScreenBackground>
-  );
-}
-
-function PackEnvelope({ shaking, bursting, onPress }: { shaking: boolean; bursting: boolean; onPress?: () => void }) {
-  const wobble = useSharedValue(0);
-  const glow = useSharedValue(0.3);
-  const burst = useSharedValue(1);
-
-  useEffect(() => {
-    if (shaking) {
-      wobble.value = withRepeat(
-        withSequence(
-          withTiming(-6, { duration: 220, easing: Easing.inOut(Easing.sin) }),
-          withTiming(6, { duration: 220, easing: Easing.inOut(Easing.sin) }),
-        ),
-        -1,
-        true,
-      );
-      glow.value = withRepeat(withSequence(withTiming(0.9, { duration: 500 }), withTiming(0.3, { duration: 500 })), -1, true);
-    }
-  }, [shaking]);
-
-  useEffect(() => {
-    if (bursting) {
-      burst.value = withSequence(withTiming(1.3, { duration: 250 }), withTiming(0, { duration: 350 }));
-    }
-  }, [bursting]);
-
-  const style = useAnimatedStyle(() => ({
-    transform: [{ rotate: `${wobble.value}deg` }, { scale: burst.value }],
-    opacity: bursting ? burst.value : 1,
-    shadowColor: colors.gold,
-    shadowOpacity: glow.value,
-    shadowRadius: 20,
-  }));
-
-  return (
-    <Pressable onPress={onPress}>
-      <Animated.View style={style}>
-        <CardBack size="large" />
-      </Animated.View>
-    </Pressable>
   );
 }
 

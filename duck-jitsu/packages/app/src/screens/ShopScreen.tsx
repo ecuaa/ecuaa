@@ -5,10 +5,10 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { PackDef } from '@duck-jitsu/engine';
 import { PacksApi, ShopApi } from '../api/endpoints';
 import type { ShopOffer } from '../api/types';
-import { CardBack } from '../components/GameCard';
 import { CurrencyPill } from '../components/CurrencyPill';
 import { ElementIcon } from '../components/ElementIcon';
 import { GameCard } from '../components/GameCard';
+import { PackArt } from '../components/PackArt';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { Reveal } from '../components/Reveal';
 import { ScreenBackground } from '../components/ScreenBackground';
@@ -109,7 +109,7 @@ function PackOfferCard({ pack, canAfford, onBuy }: { pack: PackDef; canAfford: b
 
   return (
     <View style={styles.offer}>
-      <CardBack size="small" />
+      <PackArt size="small" />
       <View style={{ flex: 1, marginLeft: 10 }}>
         <Text style={styles.offerTitle}>{pack.name}</Text>
         <Text style={styles.offerSub}>{pack.cardCount} cards -- odds: {oddsText}</Text>
