@@ -2,16 +2,20 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { getCardDef } from '@duck-jitsu/engine';
 import { PracticeApi } from '../../api/endpoints';
 import { connectSocket, disconnectSocket } from '../../api/socket';
-import type { MatchOutcome, MatchTurnResult, MatchView } from '../../api/types';
+import type { Avatar, MatchOutcome, MatchTurnResult, MatchView } from '../../api/types';
 import { useAuthStore } from '../../store/authStore';
 
 export type BattleMode = 'practice' | 'tutorial' | 'casual' | 'ranked';
 export type BattlePhase = 'queuing' | 'battle' | 'finished';
 
+/** Fixed look for AI opponents (practice/tutorial) -- a steely, none-accessory duck. */
+export const BOT_AVATAR: Avatar = { color: '#94A3B8', accessory: 'none' };
+
 export interface BattleEngineState {
   phase: BattlePhase;
   view: MatchView | null;
   opponentName: string | null;
+  opponentAvatar: Avatar;
   lastTurn: MatchTurnResult | null;
   outcome: MatchOutcome | null;
   waitingForOpponent: boolean;
@@ -42,6 +46,7 @@ export function useBattleEngine(mode: BattleMode): BattleEngineState {
   const [phase, setPhase] = useState<BattlePhase>(isRest ? 'battle' : 'queuing');
   const [view, setView] = useState<MatchView | null>(null);
   const [opponentName, setOpponentName] = useState<string | null>(null);
+  const [opponentAvatar, setOpponentAvatar] = useState<Avatar>(BOT_AVATAR);
   const [lastTurn, setLastTurn] = useState<MatchTurnResult | null>(null);
   const [outcome, setOutcome] = useState<MatchOutcome | null>(null);
   const [waitingForOpponent, setWaitingForOpponent] = useState(false);
@@ -99,6 +104,7 @@ export function useBattleEngine(mode: BattleMode): BattleEngineState {
     socket.on('match:start', (payload) => {
       matchIdRef.current = payload.matchId;
       setOpponentName(payload.opponent.name);
+      setOpponentAvatar(payload.opponent.avatar);
       setView(payload.view);
       setPhase('battle');
     });
@@ -146,6 +152,7 @@ export function useBattleEngine(mode: BattleMode): BattleEngineState {
     phase,
     view,
     opponentName,
+    opponentAvatar,
     lastTurn,
     outcome,
     waitingForOpponent,

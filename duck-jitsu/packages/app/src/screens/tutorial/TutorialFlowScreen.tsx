@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withRepeat, withSequence, withTiming } from 'react-native-reanimated';
 import { CatalogApi, ProfileApi } from '../../api/endpoints';
-import { DuckAvatar } from '../../components/DuckAvatar';
+import { DuckAvatar, type AvatarAccessory } from '../../components/DuckAvatar';
 import { ElementIcon } from '../../components/ElementIcon';
 import { GameCard } from '../../components/GameCard';
 import { PrimaryButton } from '../../components/PrimaryButton';
@@ -89,6 +89,7 @@ function ElementBadge({ element, label }: { element: 'fire' | 'water' | 'ice'; l
 
 function BattleStep({ onWon }: { onWon: () => void }) {
   const engine = useBattleEngine('tutorial');
+  const profile = useAuthStore((s) => s.profile);
   const [showEffect, setShowEffect] = useState(false);
 
   useEffect(() => {
@@ -112,6 +113,11 @@ function BattleStep({ onWon }: { onWon: () => void }) {
 
   return (
     <View style={styles.battleWrap}>
+      <View style={styles.tutorialOpponentRow}>
+        <DuckAvatar size={48} color={engine.opponentAvatar.color} accessory="none" />
+        <Text style={styles.tutorialOpponentName}>{engine.opponentName ?? 'Sensei Bot'}</Text>
+      </View>
+
       <Text style={styles.coachText}>
         {engine.waitingForOpponent
           ? 'Nice pick! Watch what happens...'
@@ -139,6 +145,8 @@ function BattleStep({ onWon }: { onWon: () => void }) {
               disabled={!isHighlighted || engine.waitingForOpponent}
               onPress={() => engine.playCard(card.instanceId)}
               style={{ marginRight: 10 }}
+              accessibilityRole="button"
+              accessibilityLabel={isHighlighted ? 'Play highlighted card' : 'Locked card'}
             >
               <Animated.View style={isHighlighted ? pulseStyle : undefined}>
                 <GameCard card={card} dimmed={!isHighlighted} selected={isHighlighted} />
@@ -147,6 +155,11 @@ function BattleStep({ onWon }: { onWon: () => void }) {
           );
         })}
       </ScrollView>
+      <DuckAvatar
+        size={44}
+        color={profile ? colors.cardColors[profile.avatar.color] ?? colors.cardColors.yellow : colors.cardColors.yellow}
+        accessory={(profile?.avatar.accessory as AvatarAccessory) ?? 'none'}
+      />
 
       {showEffect && engine.lastTurn && engine.lastTurn.outcome !== 'draw' && (
         <WinEffectOverlay
@@ -199,6 +212,8 @@ const styles = StyleSheet.create({
   elementBadge: { alignItems: 'center', backgroundColor: '#ffffff22', borderRadius: 12, padding: 10, width: 84 },
   elementLabel: { color: colors.textLight, fontWeight: '700', marginTop: 4 },
   battleWrap: { flex: 1, padding: 16, justifyContent: 'space-between' },
+  tutorialOpponentRow: { alignItems: 'center' },
+  tutorialOpponentName: { fontWeight: '800', color: colors.textDark, marginTop: 4 },
   coachText: { textAlign: 'center', fontWeight: '800', color: colors.textDark, fontSize: 16, marginBottom: 8 },
   tutorialMat: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   playedRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },

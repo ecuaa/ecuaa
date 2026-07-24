@@ -6,7 +6,10 @@ import type { RouteProp } from '@react-navigation/native';
 import { SpecialCardEffectOverlay } from '../../animations/SpecialCardEffectOverlay';
 import { WinEffectOverlay } from '../../animations/WinEffectOverlay';
 import { AdBreakOverlay } from '../../components/AdBreakOverlay';
+import type { AvatarAccessory } from '../../components/DuckAvatar';
+import { DuckAvatar } from '../../components/DuckAvatar';
 import { CardBack, GameCard } from '../../components/GameCard';
+import { FlipCard } from '../../components/FlipCard';
 import { PrimaryButton } from '../../components/PrimaryButton';
 import { ScreenBackground } from '../../components/ScreenBackground';
 import type { RootStackParamList } from '../../navigation/types';
@@ -19,14 +22,19 @@ import { getCardDef } from '@duck-jitsu/engine';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 type BattleRoute = RouteProp<RootStackParamList, 'Battle'>;
+type DuckExpression = 'normal' | 'happy' | 'dazed';
 
 export function BattleScreen() {
   const navigation = useNavigation<Nav>();
   const route = useRoute<BattleRoute>();
   const engine = useBattleEngine(route.params.mode);
-  const adsRemoved = useAuthStore((s) => s.profile?.adsRemoved ?? false);
+  const profile = useAuthStore((s) => s.profile);
+  const adsRemoved = profile?.adsRemoved ?? false;
   const [effect, setEffect] = useState<{ kind: 'element'; element: 'fire' | 'water' | 'ice' } | { kind: 'special'; anim: string; name: string } | null>(null);
   const [showAdBreak, setShowAdBreak] = useState(false);
+  const [revealed, setRevealed] = useState(false);
+  const [myExpression, setMyExpression] = useState<DuckExpression>('normal');
+  const [opponentExpression, setOpponentExpression] = useState<DuckExpression>('normal');
   const lastTurnKeyRef = useRef<string | null>(null);
 
   function handleContinue() {
@@ -43,22 +51,43 @@ export function BattleScreen() {
     if (lastTurnKeyRef.current === key) return;
     lastTurnKeyRef.current = key;
 
-    if (engine.lastTurn.outcome === 'draw') return;
-    playSfx('turnWin');
-    const specialAnim = specialAnimationFor(engine.lastTurn);
-    if (specialAnim) {
-      const winningCard = engine.lastTurn.outcome === 'you' ? engine.lastTurn.yourCard : engine.lastTurn.opponentCard;
-      let name = 'Special Card';
-      try {
-        name = getCardDef(winningCard.cardId).name;
-      } catch {
-        // fall back to generic caption
-      }
-      setEffect({ kind: 'special', anim: specialAnim, name });
-    } else {
-      const winningCard = engine.lastTurn.outcome === 'you' ? engine.lastTurn.yourCard : engine.lastTurn.opponentCard;
-      setEffect({ kind: 'element', element: winningCard.element });
+    setRevealed(false);
+    const revealTimer = setTimeout(() => setRevealed(true), 120);
+
+    if (engine.lastTurn.outcome === 'you') {
+      setMyExpression('happy');
+      setOpponentExpression('dazed');
+    } else if (engine.lastTurn.outcome === 'opponent') {
+      setMyExpression('dazed');
+      setOpponentExpression('happy');
     }
+    const expressionTimer = setTimeout(() => {
+      setMyExpression('normal');
+      setOpponentExpression('normal');
+    }, 1600);
+
+    if (engine.lastTurn.outcome !== 'draw') {
+      playSfx('turnWin');
+      const specialAnim = specialAnimationFor(engine.lastTurn);
+      if (specialAnim) {
+        const winningCard = engine.lastTurn.outcome === 'you' ? engine.lastTurn.yourCard : engine.lastTurn.opponentCard;
+        let name = 'Special Card';
+        try {
+          name = getCardDef(winningCard.cardId).name;
+        } catch {
+          // fall back to generic caption
+        }
+        setEffect({ kind: 'special', anim: specialAnim, name });
+      } else {
+        const winningCard = engine.lastTurn.outcome === 'you' ? engine.lastTurn.yourCard : engine.lastTurn.opponentCard;
+        setEffect({ kind: 'element', element: winningCard.element });
+      }
+    }
+
+    return () => {
+      clearTimeout(revealTimer);
+      clearTimeout(expressionTimer);
+    };
   }, [engine.lastTurn, engine.view?.turnNumber]);
 
   useEffect(() => {
@@ -100,6 +129,12 @@ export function BattleScreen() {
     <ScreenBackground mat>
       <View style={styles.container}>
         <View style={styles.opponentRow}>
+          <DuckAvatar
+            size={56}
+            color={engine.opponentAvatar.color}
+            accessory={engine.opponentAvatar.accessory as AvatarAccessory}
+            expression={opponentExpression}
+          />
           <Text style={styles.opponentName}>{engine.opponentName ?? 'Opponent'}</Text>
           <View style={styles.handRow}>
             {Array.from({ length: view?.opponent.handCount ?? 0 }).map((_, i) => (
@@ -114,9 +149,17 @@ export function BattleScreen() {
         <View style={styles.matCenter}>
           {engine.lastTurn ? (
             <View style={styles.playedRow}>
-              <GameCard card={engine.lastTurn.yourCard} size="large" />
+              <FlipCard
+                revealed={revealed}
+                back={<CardBack size="large" />}
+                front={<GameCard card={engine.lastTurn.yourCard} size="large" />}
+              />
               <Text style={styles.vs}>VS</Text>
-              <GameCard card={engine.lastTurn.opponentCard} size="large" />
+              <FlipCard
+                revealed={revealed}
+                back={<CardBack size="large" />}
+                front={<GameCard card={engine.lastTurn.opponentCard} size="large" />}
+              />
             </View>
           ) : (
             <Text style={styles.hint}>Pick a card to battle!</Text>
@@ -128,11 +171,25 @@ export function BattleScreen() {
           <Text style={styles.pileLabel}>Your collected: {view?.you.collected.length ?? 0}</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.hand}>
             {view?.you.hand.map((card) => (
-              <Pressable key={card.instanceId} style={{ marginRight: 8 }} onPress={() => handleCardPress(card.instanceId)}>
+              <Pressable
+                key={card.instanceId}
+                style={{ marginRight: 8 }}
+                onPress={() => handleCardPress(card.instanceId)}
+                accessibilityRole="button"
+                accessibilityLabel={`Play ${card.element} rarity ${card.rarity} ${card.color} card`}
+              >
                 <GameCard card={card} dimmed={engine.waitingForOpponent} />
               </Pressable>
             ))}
           </ScrollView>
+          <View style={styles.myAvatarRow}>
+            <DuckAvatar
+              size={48}
+              color={profile ? colors.cardColors[profile.avatar.color] ?? colors.cardColors.yellow : colors.cardColors.yellow}
+              accessory={(profile?.avatar.accessory ?? 'none') as AvatarAccessory}
+              expression={myExpression}
+            />
+          </View>
         </View>
       </View>
 
@@ -197,6 +254,7 @@ const styles = StyleSheet.create({
   waiting: { marginTop: 12, color: colors.textMuted, fontWeight: '600' },
   handArea: { alignItems: 'center' },
   hand: { paddingVertical: 8, alignItems: 'flex-end' },
+  myAvatarRow: { marginTop: 4 },
   resultOverlay: {
     ...StyleSheet.absoluteFill,
     backgroundColor: colors.overlay,

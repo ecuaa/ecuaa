@@ -1,11 +1,16 @@
 import { io, type Socket } from 'socket.io-client';
 import { API_BASE_URL } from './config';
-import type { MatchOutcome, MatchTurnResult, MatchView } from './types';
+import type { Avatar, MatchOutcome, MatchTurnResult, MatchView } from './types';
 
 export interface ServerToClientEvents {
   'queue:joined': (payload: { mode: 'casual' | 'ranked' }) => void;
   'queue:left': () => void;
-  'match:start': (payload: { matchId: string; mode: string; opponent: { name: string; trophies: number }; view: MatchView }) => void;
+  'match:start': (payload: {
+    matchId: string;
+    mode: string;
+    opponent: { name: string; trophies: number; avatar: Avatar };
+    view: MatchView;
+  }) => void;
   'match:turn-result': (payload: { turnResult: MatchTurnResult; view: MatchView }) => void;
   'match:end': (payload: MatchOutcome) => void;
 }

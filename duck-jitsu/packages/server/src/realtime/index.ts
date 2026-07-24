@@ -18,17 +18,23 @@ import { createMatch, playTurn, type MatchState } from '@duck-jitsu/engine';
 type Mode = 'casual' | 'ranked';
 type Side = 'a' | 'b';
 
+interface Avatar {
+  color: string;
+  accessory: string;
+}
+
 interface QueuedPlayer extends QueueEntry {
   socketId: string;
   displayName: string;
+  avatar: Avatar;
 }
 
 interface PvpMatch {
   matchId: string;
   mode: Mode;
   state: MatchState;
-  a: { userId: string; socketId: string; name: string; trophies: number };
-  b: { userId: string; socketId: string; name: string; trophies: number };
+  a: { userId: string; socketId: string; name: string; trophies: number; avatar: Avatar };
+  b: { userId: string; socketId: string; name: string; trophies: number; avatar: Avatar };
   pending: Partial<Record<Side, string>>;
   turnTimeout?: NodeJS.Timeout;
 }
@@ -71,8 +77,8 @@ export function attachRealtime(httpServer: HttpServer, db: Db): Server {
       matchId,
       mode,
       state,
-      a: { userId: p1.playerId, socketId: p1.socketId, name: p1.displayName, trophies: p1.trophies },
-      b: { userId: p2.playerId, socketId: p2.socketId, name: p2.displayName, trophies: p2.trophies },
+      a: { userId: p1.playerId, socketId: p1.socketId, name: p1.displayName, trophies: p1.trophies, avatar: p1.avatar },
+      b: { userId: p2.playerId, socketId: p2.socketId, name: p2.displayName, trophies: p2.trophies, avatar: p2.avatar },
       pending: {},
     };
     activeMatches.set(matchId, match);
@@ -82,13 +88,13 @@ export function attachRealtime(httpServer: HttpServer, db: Db): Server {
     io.to(p1.socketId).emit('match:start', {
       matchId,
       mode,
-      opponent: { name: p2.displayName, trophies: p2.trophies },
+      opponent: { name: p2.displayName, trophies: p2.trophies, avatar: p2.avatar },
       view: serializeMatchView(state, 'a'),
     });
     io.to(p2.socketId).emit('match:start', {
       matchId,
       mode,
-      opponent: { name: p1.displayName, trophies: p1.trophies },
+      opponent: { name: p1.displayName, trophies: p1.trophies, avatar: p1.avatar },
       view: serializeMatchView(state, 'b'),
     });
     armTurnTimeout(match);
@@ -201,6 +207,7 @@ export function attachRealtime(httpServer: HttpServer, db: Db): Server {
         queuedAtMs: Date.now(),
         socketId: socket.id,
         displayName: user.display_name,
+        avatar: { color: user.avatar_color, accessory: user.avatar_accessory },
       };
       if (payload?.mode === 'ranked') rankedQueue.push(entry);
       else casualQueue.push(entry);
