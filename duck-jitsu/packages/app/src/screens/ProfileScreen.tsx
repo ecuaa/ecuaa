@@ -5,6 +5,7 @@ import { IapApi, ProfileApi } from '../api/endpoints';
 import type { IapProduct } from '../api/types';
 import { BeltBadge } from '../components/BeltBadge';
 import { DuckAvatar, type AvatarAccessory } from '../components/DuckAvatar';
+import { GameCard } from '../components/GameCard';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { Reveal } from '../components/Reveal';
 import { ScreenBackground } from '../components/ScreenBackground';
@@ -100,6 +101,16 @@ export function ProfileScreen() {
         </Reveal>
 
         <Reveal delay={200}>
+          <Section title="Card Art Preview (testing)">
+            <Text style={styles.sub}>Current style vs. a new illustrated style -- let us know which you like!</Text>
+            <View style={styles.artPreviewRow}>
+              <ArtPreviewPair label="Ember Duckling" card={{ instanceId: 'p1', cardId: 'fire-red-t0-0', element: 'fire', rarity: 1, color: 'red', level: 1, special: false }} />
+              <ArtPreviewPair label="Golden Mallard" card={{ instanceId: 'p2', cardId: 'special-golden-mallard', element: 'fire', rarity: 10, color: 'yellow', level: 1, special: true }} />
+            </View>
+          </Section>
+        </Reveal>
+
+        <Reveal delay={230}>
           <Section title="Shop & support">
             {!profile.adsRemoved &&
               products
@@ -122,7 +133,7 @@ export function ProfileScreen() {
           </Section>
         </Reveal>
 
-        <Reveal delay={260}>
+        <Reveal delay={290}>
           <View style={{ marginTop: 20 }}>
             <PrimaryButton title="Log out" variant="danger" onPress={logout} />
           </View>
@@ -141,6 +152,24 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
+function ArtPreviewPair({ label, card }: { label: string; card: Parameters<typeof GameCard>[0]['card'] }) {
+  return (
+    <View style={styles.artPreviewPair}>
+      <Text style={styles.artPreviewLabel}>{label}</Text>
+      <View style={{ flexDirection: 'row', gap: 10 }}>
+        <View style={{ alignItems: 'center', gap: 4 }}>
+          <GameCard card={card} size="medium" illustrated={false} />
+          <Text style={styles.artPreviewCaption}>Current</Text>
+        </View>
+        <View style={{ alignItems: 'center', gap: 4 }}>
+          <GameCard card={card} size="medium" illustrated={true} />
+          <Text style={styles.artPreviewCaption}>New</Text>
+        </View>
+      </View>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   scroll: { padding: 16, paddingBottom: 40 },
   avatarPreview: { alignItems: 'center', marginBottom: 20 },
@@ -151,6 +180,10 @@ const styles = StyleSheet.create({
   swatchRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   swatch: { width: 36, height: 36, borderRadius: 18, borderWidth: 2, borderColor: '#00000020' },
   swatchActive: { borderColor: colors.textDark, borderWidth: 3 },
+  artPreviewRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 18, marginTop: 10 },
+  artPreviewPair: { gap: 6 },
+  artPreviewLabel: { fontWeight: '700', color: colors.textDark, fontSize: 12 },
+  artPreviewCaption: { color: colors.textMuted, fontSize: 11, fontWeight: '600' },
   accessoryChip: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10, backgroundColor: '#00000010' },
   accessoryChipActive: { backgroundColor: colors.bamboo },
   accessoryText: { fontWeight: '600', color: colors.textDark, textTransform: 'capitalize' },
