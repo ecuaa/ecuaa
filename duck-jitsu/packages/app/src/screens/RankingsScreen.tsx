@@ -3,11 +3,16 @@ import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { LeaderboardApi, MatchHistoryApi } from '../api/endpoints';
 import type { LeaderboardEntry, MatchHistoryEntry } from '../api/types';
+import { BeltBadge } from '../components/BeltBadge';
 import { DuckAvatar } from '../components/DuckAvatar';
+import { Reveal } from '../components/Reveal';
 import { ScreenBackground } from '../components/ScreenBackground';
 import { useAuthStore } from '../store/authStore';
 import { colors } from '../theme/colors';
 import type { AvatarAccessory } from '../components/DuckAvatar';
+
+const ROW_STAGGER_MS = 45;
+const MAX_STAGGER_INDEX = 12;
 
 export function RankingsScreen() {
   const [tab, setTab] = useState<'leaderboard' | 'history'>('leaderboard');
@@ -22,37 +27,46 @@ export function RankingsScreen() {
     }, []),
   );
 
+  function rowDelay(index: number) {
+    return Math.min(index, MAX_STAGGER_INDEX) * ROW_STAGGER_MS;
+  }
+
   return (
     <ScreenBackground mat>
-      <View style={styles.tabs}>
-        <Pressable onPress={() => setTab('leaderboard')} style={[styles.tab, tab === 'leaderboard' && styles.tabActive]}>
-          <Text style={[styles.tabText, tab === 'leaderboard' && styles.tabTextActive]}>Leaderboard</Text>
-        </Pressable>
-        <Pressable onPress={() => setTab('history')} style={[styles.tab, tab === 'history' && styles.tabActive]}>
-          <Text style={[styles.tabText, tab === 'history' && styles.tabTextActive]}>Match History</Text>
-        </Pressable>
-      </View>
+      <Reveal>
+        <View style={styles.tabs}>
+          <Pressable onPress={() => setTab('leaderboard')} style={[styles.tab, tab === 'leaderboard' && styles.tabActive]}>
+            <Text style={[styles.tabText, tab === 'leaderboard' && styles.tabTextActive]}>Leaderboard</Text>
+          </Pressable>
+          <Pressable onPress={() => setTab('history')} style={[styles.tab, tab === 'history' && styles.tabActive]}>
+            <Text style={[styles.tabText, tab === 'history' && styles.tabTextActive]}>Match History</Text>
+          </Pressable>
+        </View>
+      </Reveal>
 
       {tab === 'leaderboard' ? (
         <FlatList
           data={leaderboard}
           keyExtractor={(item) => `${item.rank}`}
           contentContainerStyle={styles.list}
-          renderItem={({ item }) => (
-            <View style={[styles.row, item.displayName === profile?.displayName && styles.rowMe]}>
-              <Text style={styles.rank}>#{item.rank}</Text>
-              <DuckAvatar
-                size={40}
-                color={colors.cardColors[item.avatar.color] ?? colors.cardColors.yellow}
-                accessory={item.avatar.accessory as AvatarAccessory}
-                idle={false}
-              />
-              <View style={{ flex: 1, marginLeft: 10 }}>
-                <Text style={styles.name}>{item.displayName}</Text>
-                <Text style={styles.sub}>{item.arena}</Text>
+          renderItem={({ item, index }) => (
+            <Reveal delay={rowDelay(index)}>
+              <View style={[styles.row, item.displayName === profile?.displayName && styles.rowMe]}>
+                <Text style={styles.rank}>#{item.rank}</Text>
+                <DuckAvatar
+                  size={40}
+                  color={colors.cardColors[item.avatar.color] ?? colors.cardColors.yellow}
+                  accessory={item.avatar.accessory as AvatarAccessory}
+                  idle={false}
+                />
+                <View style={{ flex: 1, marginLeft: 10 }}>
+                  <Text style={styles.name}>{item.displayName}</Text>
+                  <Text style={styles.sub}>{item.arena}</Text>
+                  <BeltBadge belt={item.belt} size="small" showLabel={false} />
+                </View>
+                <Text style={styles.trophies}>🏆 {item.trophies}</Text>
               </View>
-              <Text style={styles.trophies}>🏆 {item.trophies}</Text>
-            </View>
+            </Reveal>
           )}
           ListEmptyComponent={<Text style={styles.empty}>No ranked players yet.</Text>}
         />
@@ -61,20 +75,22 @@ export function RankingsScreen() {
           data={history}
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.list}
-          renderItem={({ item }) => (
-            <View style={styles.row}>
-              <View style={[styles.resultDot, { backgroundColor: resultColor(item.result) }]} />
-              <View style={{ flex: 1, marginLeft: 10 }}>
-                <Text style={styles.name}>vs {item.opponentName}</Text>
-                <Text style={styles.sub}>{item.mode} · {item.result}</Text>
+          renderItem={({ item, index }) => (
+            <Reveal delay={rowDelay(index)}>
+              <View style={styles.row}>
+                <View style={[styles.resultDot, { backgroundColor: resultColor(item.result) }]} />
+                <View style={{ flex: 1, marginLeft: 10 }}>
+                  <Text style={styles.name}>vs {item.opponentName}</Text>
+                  <Text style={styles.sub}>{item.mode} · {item.result}</Text>
+                </View>
+                {item.trophyDelta !== 0 && (
+                  <Text style={[styles.trophyDelta, { color: item.trophyDelta > 0 ? colors.success : colors.danger }]}>
+                    {item.trophyDelta > 0 ? '+' : ''}
+                    {item.trophyDelta}
+                  </Text>
+                )}
               </View>
-              {item.trophyDelta !== 0 && (
-                <Text style={[styles.trophyDelta, { color: item.trophyDelta > 0 ? colors.success : colors.danger }]}>
-                  {item.trophyDelta > 0 ? '+' : ''}
-                  {item.trophyDelta}
-                </Text>
-              )}
-            </View>
+            </Reveal>
           )}
           ListEmptyComponent={<Text style={styles.empty}>Play a match to see your history here.</Text>}
         />

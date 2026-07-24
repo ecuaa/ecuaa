@@ -10,6 +10,7 @@ import { CurrencyPill } from '../components/CurrencyPill';
 import { ElementIcon } from '../components/ElementIcon';
 import { GameCard } from '../components/GameCard';
 import { PrimaryButton } from '../components/PrimaryButton';
+import { Reveal } from '../components/Reveal';
 import { ScreenBackground } from '../components/ScreenBackground';
 import type { RootStackParamList } from '../navigation/types';
 import { useAuthStore } from '../store/authStore';
@@ -59,34 +60,39 @@ export function ShopScreen() {
 
   return (
     <ScreenBackground mat>
-      <View style={styles.header}>
-        <Text style={styles.title}>Dojo Shop</Text>
-        <View style={{ flexDirection: 'row', gap: 8 }}>
-          {profile && <CurrencyPill kind="soft" amount={profile.softCurrency} />}
-          {profile && <CurrencyPill kind="premium" amount={profile.premiumCurrency} />}
+      <Reveal>
+        <View style={styles.header}>
+          <Text style={styles.title}>Dojo Shop</Text>
+          <View style={{ flexDirection: 'row', gap: 8 }}>
+            {profile && <CurrencyPill kind="soft" amount={profile.softCurrency} />}
+            {profile && <CurrencyPill kind="premium" amount={profile.premiumCurrency} />}
+          </View>
         </View>
-      </View>
-      <Text style={styles.refreshNote}>Card offers refresh every {refreshHours}h</Text>
+        <Text style={styles.refreshNote}>Card offers refresh every {refreshHours}h</Text>
+      </Reveal>
       <ScrollView contentContainerStyle={styles.list}>
         <Text style={styles.sectionHeading}>Card Packs</Text>
-        {packs.map((pack) => (
-          <PackOfferCard
-            key={pack.id}
-            pack={pack}
-            canAfford={
-              profile
-                ? pack.currency === 'soft'
-                  ? profile.softCurrency >= pack.cost
-                  : profile.premiumCurrency >= pack.cost
-                : false
-            }
-            onBuy={() => navigation.navigate('PackOpening', { source: pack.id as 'basic' | 'premium' })}
-          />
+        {packs.map((pack, i) => (
+          <Reveal key={pack.id} delay={i * 60}>
+            <PackOfferCard
+              pack={pack}
+              canAfford={
+                profile
+                  ? pack.currency === 'soft'
+                    ? profile.softCurrency >= pack.cost
+                    : profile.premiumCurrency >= pack.cost
+                  : false
+              }
+              onBuy={() => navigation.navigate('PackOpening', { source: pack.id as 'basic' | 'premium' })}
+            />
+          </Reveal>
         ))}
 
         <Text style={styles.sectionHeading}>Today's Cards</Text>
-        {offers.map((offer) => (
-          <OfferCard key={offer.id} offer={offer} busy={busyOfferId === offer.id} onBuy={() => buy(offer)} />
+        {offers.map((offer, i) => (
+          <Reveal key={offer.id} delay={packs.length * 60 + i * 60}>
+            <OfferCard offer={offer} busy={busyOfferId === offer.id} onBuy={() => buy(offer)} />
+          </Reveal>
         ))}
         {offers.length === 0 && <Text style={styles.empty}>No offers right now -- check back later!</Text>}
       </ScrollView>

@@ -1,6 +1,6 @@
 import request from 'supertest';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { setTrophies } from '../repo/users';
+import { setDefeatedSensei, setTrophies } from '../repo/users';
 import { makeTestApp } from '../testUtils';
 
 let ctx: ReturnType<typeof makeTestApp>;
@@ -28,6 +28,15 @@ describe('leaderboard', () => {
     const names = res.body.leaderboard.map((e: any) => e.displayName);
     expect(names.slice(0, 3)).toEqual(['Bravo', 'Alpha', 'Charlie']);
     expect(res.body.leaderboard[0].rank).toBe(1);
+  });
+
+  it('shows each player\'s belt, with the Black Belt overriding a low arena tier', async () => {
+    const a = await registerUser('sensei-slayer@example.com', 'SenseiSlayer');
+    setDefeatedSensei(ctx.db, a.id); // still at 0 trophies / Pond Yard otherwise
+
+    const res = await request(ctx.app).get('/leaderboard').set('Authorization', `Bearer ${a.token}`);
+    const entry = res.body.leaderboard.find((e: any) => e.displayName === 'SenseiSlayer');
+    expect(entry.belt).toBe('black');
   });
 });
 

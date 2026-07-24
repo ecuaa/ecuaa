@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, StyleSheet, Text, TextInput, View } from 'react-native';
 import { DuckAvatar } from '../components/DuckAvatar';
 import { PrimaryButton } from '../components/PrimaryButton';
+import { Reveal } from '../components/Reveal';
 import { ScreenBackground } from '../components/ScreenBackground';
 import { useAuthStore } from '../store/authStore';
 import { colors } from '../theme/colors';
@@ -43,57 +44,61 @@ export function AuthScreen() {
   return (
     <ScreenBackground>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.flex}>
-        <View style={styles.header}>
-          <DuckAvatar size={96} color={colors.cardColors.yellow} accessory="headband" />
-          <Text style={styles.title}>Duck Jitsu</Text>
-          <Text style={styles.subtitle}>Splash. Scorch. Freeze. Win the dojo.</Text>
-        </View>
-
-        <View style={styles.card}>
-          <View style={styles.toggleRow}>
-            <ToggleTab label="Sign up" active={mode === 'register'} onPress={() => setMode('register')} />
-            <ToggleTab label="Log in" active={mode === 'login'} onPress={() => setMode('login')} />
+        <Reveal>
+          <View style={styles.header}>
+            <DuckAvatar size={96} color={colors.cardColors.yellow} accessory="headband" />
+            <Text style={styles.title}>Duck Jitsu</Text>
+            <Text style={styles.subtitle}>Splash. Scorch. Freeze. Win the dojo.</Text>
           </View>
+        </Reveal>
 
-          {mode === 'register' && (
+        <Reveal delay={120}>
+          <View style={styles.card}>
+            <View style={styles.toggleRow}>
+              <ToggleTab label="Sign up" active={mode === 'register'} onPress={() => setMode('register')} />
+              <ToggleTab label="Log in" active={mode === 'login'} onPress={() => setMode('login')} />
+            </View>
+
+            {mode === 'register' && (
+              <TextInput
+                placeholder="Duck name"
+                placeholderTextColor={colors.textMuted}
+                value={displayName}
+                onChangeText={setDisplayName}
+                style={styles.input}
+                autoCapitalize="words"
+              />
+            )}
             <TextInput
-              placeholder="Duck name"
+              placeholder="Email"
               placeholderTextColor={colors.textMuted}
-              value={displayName}
-              onChangeText={setDisplayName}
+              value={email}
+              onChangeText={setEmail}
               style={styles.input}
-              autoCapitalize="words"
+              autoCapitalize="none"
+              keyboardType="email-address"
             />
-          )}
-          <TextInput
-            placeholder="Email"
-            placeholderTextColor={colors.textMuted}
-            value={email}
-            onChangeText={setEmail}
-            style={styles.input}
-            autoCapitalize="none"
-            keyboardType="email-address"
-          />
-          <TextInput
-            placeholder="Password"
-            placeholderTextColor={colors.textMuted}
-            value={password}
-            onChangeText={setPassword}
-            style={styles.input}
-            secureTextEntry
-          />
+            <TextInput
+              placeholder="Password"
+              placeholderTextColor={colors.textMuted}
+              value={password}
+              onChangeText={setPassword}
+              style={styles.input}
+              secureTextEntry
+            />
 
-          {error && <Text style={styles.error}>{error}</Text>}
+            {error && <Text style={styles.error}>{error}</Text>}
 
-          <PrimaryButton
-            title={mode === 'register' ? 'Create account' : 'Log in'}
-            onPress={submit}
-            loading={busy}
-            disabled={!email || !password}
-          />
-          <View style={{ height: 10 }} />
-          <PrimaryButton title="Continue as guest" onPress={guest} loading={busy} variant="secondary" />
-        </View>
+            <PrimaryButton
+              title={mode === 'register' ? 'Create account' : 'Log in'}
+              onPress={submit}
+              loading={busy}
+              disabled={!email || !password}
+            />
+            <View style={{ height: 10 }} />
+            <PrimaryButton title="Continue as guest" onPress={guest} loading={busy} variant="secondary" />
+          </View>
+        </Reveal>
       </KeyboardAvoidingView>
     </ScreenBackground>
   );

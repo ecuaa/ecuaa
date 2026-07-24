@@ -1,4 +1,4 @@
-import { arenaForTrophies } from '@duck-jitsu/engine';
+import { arenaForTrophies, playerBelt } from '@duck-jitsu/engine';
 import { Router } from 'express';
 import { requireAuth } from '../auth';
 import type { Db } from '../db';
@@ -19,6 +19,7 @@ export function leaderboardRouter(db: Db): Router {
         trophies: u.trophies,
         arena: arenaForTrophies(u.trophies).name,
         avatar: { color: u.avatar_color, accessory: u.avatar_accessory },
+        belt: playerBelt(arenaForTrophies(u.trophies).tier, Boolean(u.has_defeated_sensei)),
       })),
     });
   });

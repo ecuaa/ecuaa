@@ -3,8 +3,10 @@ import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-nati
 import { CARD_COLORS } from '@duck-jitsu/engine';
 import { IapApi, ProfileApi } from '../api/endpoints';
 import type { IapProduct } from '../api/types';
+import { BeltBadge } from '../components/BeltBadge';
 import { DuckAvatar, type AvatarAccessory } from '../components/DuckAvatar';
 import { PrimaryButton } from '../components/PrimaryButton';
+import { Reveal } from '../components/Reveal';
 import { ScreenBackground } from '../components/ScreenBackground';
 import { useAuthStore } from '../store/authStore';
 import { colors } from '../theme/colors';
@@ -48,70 +50,83 @@ export function ProfileScreen() {
   return (
     <ScreenBackground mat>
       <ScrollView contentContainerStyle={styles.scroll}>
-        <View style={styles.avatarPreview}>
-          <DuckAvatar
-            size={110}
-            color={colors.cardColors[profile.avatar.color] ?? colors.cardColors.yellow}
-            accessory={profile.avatar.accessory as AvatarAccessory}
-          />
-          <Text style={styles.name}>{profile.displayName}</Text>
-          {profile.isGuest && <Text style={styles.guestBadge}>Guest account</Text>}
-        </View>
-
-        <Section title="Duck color">
-          <View style={styles.swatchRow}>
-            {CARD_COLORS.map((c) => (
-              <Pressable
-                key={c}
-                onPress={() => pickColor(c)}
-                style={[
-                  styles.swatch,
-                  { backgroundColor: colors.cardColors[c] },
-                  profile.avatar.color === c && styles.swatchActive,
-                ]}
-              />
-            ))}
+        <Reveal>
+          <View style={styles.avatarPreview}>
+            <DuckAvatar
+              size={110}
+              color={colors.cardColors[profile.avatar.color] ?? colors.cardColors.yellow}
+              accessory={profile.avatar.accessory as AvatarAccessory}
+            />
+            <Text style={styles.name}>{profile.displayName}</Text>
+            {profile.isGuest && <Text style={styles.guestBadge}>Guest account</Text>}
+            <View style={{ marginTop: 8 }}>
+              <BeltBadge belt={profile.belt} />
+            </View>
           </View>
-        </Section>
+        </Reveal>
 
-        <Section title="Accessory">
-          <View style={styles.swatchRow}>
-            {ACCESSORIES.map((a) => (
-              <Pressable
-                key={a}
-                onPress={() => pickAccessory(a)}
-                style={[styles.accessoryChip, profile.avatar.accessory === a && styles.accessoryChipActive]}
-              >
-                <Text style={[styles.accessoryText, profile.avatar.accessory === a && { color: '#fff' }]}>{a}</Text>
-              </Pressable>
-            ))}
-          </View>
-        </Section>
+        <Reveal delay={80}>
+          <Section title="Duck color">
+            <View style={styles.swatchRow}>
+              {CARD_COLORS.map((c) => (
+                <Pressable
+                  key={c}
+                  onPress={() => pickColor(c)}
+                  style={[
+                    styles.swatch,
+                    { backgroundColor: colors.cardColors[c] },
+                    profile.avatar.color === c && styles.swatchActive,
+                  ]}
+                />
+              ))}
+            </View>
+          </Section>
+        </Reveal>
 
-        <Section title="Shop & support">
-          {!profile.adsRemoved &&
-            products
-              .filter((p) => p.kind === 'remove_ads')
+        <Reveal delay={140}>
+          <Section title="Accessory">
+            <View style={styles.swatchRow}>
+              {ACCESSORIES.map((a) => (
+                <Pressable
+                  key={a}
+                  onPress={() => pickAccessory(a)}
+                  style={[styles.accessoryChip, profile.avatar.accessory === a && styles.accessoryChipActive]}
+                >
+                  <Text style={[styles.accessoryText, profile.avatar.accessory === a && { color: '#fff' }]}>{a}</Text>
+                </Pressable>
+              ))}
+            </View>
+          </Section>
+        </Reveal>
+
+        <Reveal delay={200}>
+          <Section title="Shop & support">
+            {!profile.adsRemoved &&
+              products
+                .filter((p) => p.kind === 'remove_ads')
+                .map((p) => (
+                  <View key={p.id} style={styles.productRow}>
+                    <Text style={styles.productName}>{p.name}</Text>
+                    <PrimaryButton title={`$${p.priceUsd.toFixed(2)}`} onPress={() => purchase(p.id)} loading={busyProduct === p.id} />
+                  </View>
+                ))}
+            {profile.adsRemoved && <Text style={styles.sub}>Ads removed -- thank you!</Text>}
+            {products
+              .filter((p) => p.kind === 'premium_currency')
               .map((p) => (
                 <View key={p.id} style={styles.productRow}>
                   <Text style={styles.productName}>{p.name}</Text>
-                  <PrimaryButton title={`$${p.priceUsd.toFixed(2)}`} onPress={() => purchase(p.id)} loading={busyProduct === p.id} />
+                  <PrimaryButton title={`$${p.priceUsd.toFixed(2)}`} onPress={() => purchase(p.id)} loading={busyProduct === p.id} variant="secondary" />
                 </View>
               ))}
-          {profile.adsRemoved && <Text style={styles.sub}>Ads removed -- thank you!</Text>}
-          {products
-            .filter((p) => p.kind === 'premium_currency')
-            .map((p) => (
-              <View key={p.id} style={styles.productRow}>
-                <Text style={styles.productName}>{p.name}</Text>
-                <PrimaryButton title={`$${p.priceUsd.toFixed(2)}`} onPress={() => purchase(p.id)} loading={busyProduct === p.id} variant="secondary" />
-              </View>
-            ))}
-        </Section>
+          </Section>
+        </Reveal>
 
-        <View style={{ marginTop: 20 }}>
-          <PrimaryButton title="Log out" variant="danger" onPress={logout} />
-        </View>
+        <Reveal delay={260}>
+          <View style={{ marginTop: 20 }}>
+            <PrimaryButton title="Log out" variant="danger" onPress={logout} />
+          </View>
+        </Reveal>
       </ScrollView>
     </ScreenBackground>
   );

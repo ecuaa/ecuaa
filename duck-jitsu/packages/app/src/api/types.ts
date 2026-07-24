@@ -107,6 +107,7 @@ export interface LeaderboardEntry {
   trophies: number;
   arena: string;
   avatar: Avatar;
+  belt: BeltColor;
 }
 
 export interface MatchHistoryEntry {
